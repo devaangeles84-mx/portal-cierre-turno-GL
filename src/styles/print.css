@@ -1,0 +1,58 @@
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .app-header,
+  .app-shell,
+  .toast,
+  .modal-backdrop {
+    display: none !important;
+  }
+
+  .print-view {
+    display: block;
+    color: #111;
+    font-family: Arial, sans-serif;
+    font-size: 10.5pt;
+  }
+
+  .print-view h1 {
+    margin: 0 0 8px;
+    font-size: 19pt;
+  }
+
+  .print-view h2 {
+    margin: 18px 0 8px;
+    font-size: 13pt;
+  }
+
+  .print-meta,
+  .print-signatures {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 10px 0;
+  }
+
+  .print-view table {
+    width: 100%;
+    border-collapse: collapse;
+    page-break-inside: auto;
+  }
+
+  .print-view th,
+  .print-view td {
+    border: 1px solid #999;
+    padding: 5px;
+    text-align: left;
+  }
+
+  .print-view th {
+    background: #eee;
+  }
+}
