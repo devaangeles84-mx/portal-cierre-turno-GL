@@ -31,6 +31,7 @@ export function createEmptyOfficeResumen(oficina) {
     oficina,
     efectivo: 0,
     efectivoReportado: 0,
+    efectivoEsperado: 0,
     efectivoContado: 0,
     egresos: 0,
     ingresos: 0,
@@ -50,7 +51,7 @@ export function calculateCashCount(conteos) {
   return conteos.reduce((total, row) => total + toNumber(row.cantidad) * toNumber(row.denominacion), 0);
 }
 
-export function calculateOfficeSummaries({ oficinas, movimientos, conteos, efectivoReportado }) {
+export function calculateOfficeSummaries({ oficinas, movimientos, conteos }) {
   const summaries = oficinas.map(createEmptyOfficeResumen);
   const byOffice = new Map(summaries.map((summary) => [summary.oficina, summary]));
 
@@ -77,10 +78,11 @@ export function calculateOfficeSummaries({ oficinas, movimientos, conteos, efect
   });
 
   summaries.forEach((summary) => {
-    summary.efectivoReportado = toNumber(efectivoReportado[summary.oficina]);
-    summary.importeSinPensiones = summary.efectivo - summary.egresos;
-    summary.importeConPensiones = summary.pensiones > 0 ? summary.importeSinPensiones + summary.pensiones : 0;
-    summary.diferencia = summary.efectivoContado - summary.efectivoReportado;
+    summary.efectivoEsperado = summary.efectivo - summary.egresos;
+    summary.efectivoReportado = summary.efectivoEsperado;
+    summary.importeSinPensiones = summary.efectivo - summary.pensiones - summary.egresos;
+    summary.importeConPensiones = summary.pensiones > 0 ? summary.efectivo - summary.egresos : 0;
+    summary.diferencia = summary.efectivoContado - summary.efectivoEsperado;
 
     Object.keys(summary).forEach((key) => {
       if (typeof summary[key] === "number") summary[key] = roundMoney(summary[key]);

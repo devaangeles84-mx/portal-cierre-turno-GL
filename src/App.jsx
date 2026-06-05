@@ -58,7 +58,6 @@ export default function App() {
   const [conteos, setConteos] = useState(
     draft?.conteos || createInitialCashCounts(DEFAULT_CATALOGOS.oficinas, DEFAULT_CATALOGOS.denominaciones)
   );
-  const [efectivoReportado, setEfectivoReportado] = useState(draft?.efectivoReportado || {});
   const [toast, setToast] = useState(null);
   const [confirm, setConfirm] = useState({ open: false, warnings: [] });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,22 +90,18 @@ export default function App() {
       calculateOfficeSummaries({
         oficinas: scopedCatalogos.oficinas,
         movimientos,
-        conteos,
-        efectivoReportado
+        conteos
       }),
-    [scopedCatalogos.oficinas, movimientos, conteos, efectivoReportado]
+    [scopedCatalogos.oficinas, movimientos, conteos]
   );
 
   const totals = useMemo(() => calculateTotals(summaries), [summaries]);
 
   const updateForm = (field, value) => setForm((current) => ({ ...current, [field]: value }));
-  const updateEfectivo = (oficina, value) => {
-    setEfectivoReportado((current) => ({ ...current, [oficina]: value }));
-  };
 
   const saveDraft = async () => {
     const payload = buildPayload("Borrador");
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, movimientos, conteos, efectivoReportado, estatus: "Borrador" }));
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, movimientos, conteos, estatus: "Borrador" }));
     try {
       await submitCierre(payload);
       setToast({ type: "ok", message: "Borrador guardado." });
@@ -226,8 +221,6 @@ export default function App() {
                     <OfficeCard
                       key={summary.oficina}
                       summary={summary}
-                      value={efectivoReportado[summary.oficina] || ""}
-                      onEfectivoChange={updateEfectivo}
                     />
                   ))}
                 </section>

@@ -18,7 +18,7 @@ export default function PrintView({ form, movimientos, conteos, summaries, total
         <thead>
           <tr>
             <th>Oficina</th>
-            <th>Efectivo reportado</th>
+            <th>Efectivo esperado</th>
             <th>Efectivo contado</th>
             <th>Pensiones</th>
             <th>Con pensiones</th>
@@ -29,7 +29,7 @@ export default function PrintView({ form, movimientos, conteos, summaries, total
           {summaries.map((summary) => (
             <tr key={summary.oficina}>
               <td>{summary.oficina}</td>
-              <td>{formatMoney(summary.efectivoReportado)}</td>
+              <td>{formatMoney(summary.efectivoEsperado)}</td>
               <td>{formatMoney(summary.efectivoContado)}</td>
               <td>{formatMoney(summary.pensiones)}</td>
               <td>{formatMoney(summary.importeConPensiones)}</td>
