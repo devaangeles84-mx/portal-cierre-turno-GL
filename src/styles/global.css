@@ -409,8 +409,19 @@ dd {
 }
 
 .movements-table select,
-.movements-table input {
+.movements-table input,
+.vouchers-table input {
   min-width: 120px;
+}
+
+.vouchers-table {
+  min-width: 1240px;
+}
+
+.empty-table-cell {
+  color: var(--muted);
+  font-weight: 750;
+  text-align: center !important;
 }
 
 .segmented-row {
@@ -695,6 +706,18 @@ dd {
   font-weight: 800;
 }
 
+.inline-alert {
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-weight: 850;
+}
+
+.inline-alert.ok {
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
 .capture-fieldset {
   display: grid;
   gap: 20px;
@@ -826,7 +849,7 @@ dd {
 
   .header-actions {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
   }
 
   .brand-block {

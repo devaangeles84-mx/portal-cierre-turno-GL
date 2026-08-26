@@ -15,7 +15,8 @@ const metrics = [
   ["pensiones", "Pensiones"],
   ["efectivoContado", "Efectivo contado"],
   ["importeSinPensiones", "Sin pensiones"],
-  ["importeConPensiones", "Con pensiones"]
+  ["importeConPensiones", "Con pensiones"],
+  ["totalOficina", "Total neto oficina"]
 ];
 
 export default function OfficeCard({ summary }) {

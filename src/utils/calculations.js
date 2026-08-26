@@ -1,7 +1,7 @@
 import { roundMoney, toNumber } from "./money";
 import { createId } from "./id";
 
-export const DEFAULT_DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1];
+export const DEFAULT_DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5];
 
 export const DEFAULT_CATALOGOS = {
   oficinas: ["Alvarez", "La Partida (Matamoros)", "La Union", "El Triunfo", "Encierro Gomez (Walmart)"],
@@ -43,6 +43,7 @@ export function createEmptyOfficeResumen(oficina) {
     pendientes: 0,
     importeSinPensiones: 0,
     importeConPensiones: 0,
+    totalOficina: 0,
     diferencia: 0
   };
 }
@@ -82,6 +83,7 @@ export function calculateOfficeSummaries({ oficinas, movimientos, conteos }) {
     summary.efectivoReportado = summary.efectivoEsperado;
     summary.importeSinPensiones = summary.efectivo - summary.pensiones - summary.egresos;
     summary.importeConPensiones = summary.pensiones > 0 ? summary.efectivo - summary.egresos : 0;
+    summary.totalOficina = summary.efectivoEsperado + summary.kashpay + summary.terminalBBVA + summary.transferencia;
     summary.diferencia = summary.efectivoContado - summary.efectivoEsperado;
 
     Object.keys(summary).forEach((key) => {
@@ -101,7 +103,11 @@ export function calculateTotals(summaries) {
       acc.totalTransferencia += summary.transferencia;
       acc.totalPendientes += summary.pendientes;
       acc.totalPensiones += summary.pensiones;
+      acc.totalEgresos += summary.egresos;
+      acc.totalIngresos += summary.ingresos;
+      acc.totalLiberaciones += summary.liberaciones;
       acc.diferenciaGeneral += summary.diferencia;
+      acc.totalGeneral += summary.totalOficina;
       return acc;
     },
     {
@@ -111,13 +117,13 @@ export function calculateTotals(summaries) {
       totalTransferencia: 0,
       totalPendientes: 0,
       totalPensiones: 0,
+      totalEgresos: 0,
+      totalIngresos: 0,
+      totalLiberaciones: 0,
       diferenciaGeneral: 0,
       totalGeneral: 0
     }
   );
-
-  totals.totalGeneral =
-    totals.totalEfectivo + totals.totalKashpay + totals.totalTerminal + totals.totalTransferencia;
 
   Object.keys(totals).forEach((key) => {
     totals[key] = roundMoney(totals[key]);

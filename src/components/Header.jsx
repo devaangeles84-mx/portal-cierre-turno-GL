@@ -1,9 +1,21 @@
 import React from "react";
 import Printer from "lucide-react/dist/esm/icons/printer.js";
+import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw.js";
 import Save from "lucide-react/dist/esm/icons/save.js";
 import Send from "lucide-react/dist/esm/icons/send.js";
 
-export default function Header({ form, catalogos, session, onChange, onSaveDraft, onSubmit, onPrint, onLogout, isSubmitting }) {
+export default function Header({
+  form,
+  catalogos,
+  session,
+  onChange,
+  onSaveDraft,
+  onSubmit,
+  onPrint,
+  onClear,
+  onLogout,
+  isSubmitting
+}) {
   const isAdmin = session?.rol === "ADMIN";
 
   return (
@@ -45,7 +57,7 @@ export default function Header({ form, catalogos, session, onChange, onSaveDraft
           Usuario
           <input
             type="text"
-            value={form.usuarioCaptura}
+            value={session?.nombre || session?.usuario || form.usuarioCaptura}
             onChange={(event) => onChange("usuarioCaptura", event.target.value)}
             placeholder="Nombre"
             disabled={Boolean(session)}
@@ -69,6 +81,10 @@ export default function Header({ form, catalogos, session, onChange, onSaveDraft
             <button type="button" className="secondary icon-button" onClick={onPrint} title="Vista de impresion">
               <Printer size={18} />
               <span>Imprimir</span>
+            </button>
+            <button type="button" className="secondary icon-button" onClick={onClear} title="Limpiar captura">
+              <RotateCcw size={18} />
+              <span>Limpiar</span>
             </button>
             <button type="button" className="primary icon-button" onClick={onSubmit} disabled={isSubmitting}>
               <Send size={18} />

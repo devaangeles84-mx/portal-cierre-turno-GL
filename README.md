@@ -8,6 +8,7 @@ Aplicacion web para capturar cierres diarios de operacion administrativa/caja, c
 - Captura por oficina/sucursal.
 - Tabla dinamica de movimientos.
 - Arqueo fisico de efectivo por denominacion.
+- Registro de vales fisicos de aseguradora para enviar a CXC en sobre o valija.
 - Resumen automatico con diferencias.
 - Borrador local en el navegador.
 - Vista de impresion.
@@ -178,7 +179,26 @@ Si prefieres, tambien puedes crear el repositorio con GitHub Desktop y arrastrar
    - `CierresTurno`
    - `CierreMovimientos`
    - `CierreConteoEfectivo`
+   - `CierreValesAseguradora`
    - `CierreOficinasResumen`
+
+## Vales Fisicos Para CXC
+
+Despues del arqueo fisico, la captura incluye una tabla para registrar vales o folios fisicos de aseguradora que llegan al encierro y deben viajar a CXC.
+
+Campos:
+
+- Orden GRIPS
+- Aseguradora
+- Folio del vale
+- Vehiculo
+- Marca
+- Modelo
+- Color
+- Año
+- Comentarios
+
+Estos datos se guardan en la hoja `CierreValesAseguradora`.
 
 ## Recomendaciones Futuras
 

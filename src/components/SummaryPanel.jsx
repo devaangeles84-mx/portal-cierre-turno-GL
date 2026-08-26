@@ -45,8 +45,16 @@ export default function SummaryPanel({ summaries, totals }) {
           <dd>{formatMoney(totals.totalPendientes)}</dd>
         </div>
         <div>
-          <dt>Pensiones</dt>
-          <dd>{formatMoney(totals.totalPensiones)}</dd>
+          <dt>Egresos</dt>
+          <dd>{formatMoney(totals.totalEgresos)}</dd>
+        </div>
+        <div>
+          <dt>Ingresos / O.S.</dt>
+          <dd>{formatMoney(totals.totalIngresos)}</dd>
+        </div>
+        <div>
+          <dt>Liberaciones</dt>
+          <dd>{formatMoney(totals.totalLiberaciones)}</dd>
         </div>
       </dl>
 
@@ -54,7 +62,7 @@ export default function SummaryPanel({ summaries, totals }) {
         {summaries.map((summary) => (
           <div key={summary.oficina}>
             <span>{summary.oficina}</span>
-            <strong>{formatMoney(summary.importeConPensiones)}</strong>
+            <strong>{formatMoney(summary.totalOficina)}</strong>
           </div>
         ))}
       </div>

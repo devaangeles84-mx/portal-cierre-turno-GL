@@ -21,9 +21,30 @@
     font-size: 10.5pt;
   }
 
-  .print-view h1 {
-    margin: 0 0 8px;
+  .print-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+    border-bottom: 4px solid #f59e0b;
+    background: #101827;
+    color: #fff;
+    padding: 12px;
+  }
+
+  .print-header img {
+    width: 110px;
+    height: auto;
+  }
+
+  .print-header h1 {
+    margin: 0;
     font-size: 19pt;
+  }
+
+  .print-header p {
+    margin: 3px 0 0;
+    color: #d8dee9;
   }
 
   .print-view h2 {

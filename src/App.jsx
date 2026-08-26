@@ -3,6 +3,7 @@ import CashCountTable from "./components/CashCountTable";
 import ConfirmModal from "./components/ConfirmModal";
 import AdminDashboard from "./components/AdminDashboard";
 import Header from "./components/Header";
+import InsuranceVouchersTable from "./components/InsuranceVouchersTable";
 import Login from "./components/Login";
 import MovementsTable from "./components/MovementsTable";
 import ObservationsSignatures from "./components/ObservationsSignatures";
@@ -58,7 +59,9 @@ export default function App() {
   const [conteos, setConteos] = useState(
     draft?.conteos || createInitialCashCounts(DEFAULT_CATALOGOS.oficinas, DEFAULT_CATALOGOS.denominaciones)
   );
+  const [valesAseguradora, setValesAseguradora] = useState(draft?.valesAseguradora || []);
   const [toast, setToast] = useState(null);
+  const [statusMessage, setStatusMessage] = useState("");
   const [confirm, setConfirm] = useState({ open: false, warnings: [] });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocked, setIsLocked] = useState(draft?.estatus === "Enviado");
@@ -69,7 +72,7 @@ export default function App() {
         ...DEFAULT_CATALOGOS,
         ...data,
         oficinas: mergeUnique(DEFAULT_CATALOGOS.oficinas, data.oficinas || []),
-        denominaciones: data.denominaciones.map(Number)
+        denominaciones: normalizeDenominations(data.denominaciones)
       };
       setCatalogos(normalized);
       setConteos((current) => ensureCashCounts(current, normalized.oficinas, normalized.denominaciones));
@@ -101,12 +104,19 @@ export default function App() {
 
   const saveDraft = async () => {
     const payload = buildPayload("Borrador");
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, movimientos, conteos, estatus: "Borrador" }));
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ form, movimientos, conteos, valesAseguradora, estatus: "Borrador" })
+    );
     try {
-      await submitCierre(payload);
-      setToast({ type: "ok", message: "Borrador guardado." });
+      const result = await submitCierre(payload);
+      const message = result.message || "Borrador guardado.";
+      setStatusMessage(message);
+      setToast({ type: "ok", message });
     } catch {
-      setToast({ type: "ok", message: "Borrador guardado localmente. No se pudo guardar en Sheets todavia." });
+      const message = "Borrador guardado localmente. No se pudo confirmar en Sheets todavia.";
+      setStatusMessage(message);
+      setToast({ type: "ok", message });
     }
   };
 
@@ -122,11 +132,32 @@ export default function App() {
     },
     movimientos,
     conteos: conteos.filter((row) => Number(row.cantidad) > 0),
+    valesAseguradora: valesAseguradora.filter((vale) =>
+      [
+        vale.ordenGrips,
+        vale.aseguradora,
+        vale.folioVale,
+        vale.vehiculo,
+        vale.marca,
+        vale.modelo,
+        vale.color,
+        vale.anio,
+        vale.comentarios
+      ].some((value) => String(value || "").trim() !== "")
+    ),
     resumenOficinas: summaries
   });
 
   const requestSubmit = () => {
-    const validation = validateCierre({ form, oficinas: catalogos.oficinas, movimientos, summaries });
+    const validation = validateCierre({
+      form: {
+        ...form,
+        usuarioCaptura: session?.nombre || session?.usuario || form.usuarioCaptura
+      },
+      oficinas: scopedCatalogos.oficinas,
+      movimientos,
+      summaries
+    });
     if (validation.errors.length > 0) {
       setToast({ type: "error", message: validation.errors.join(" ") });
       return;
@@ -147,7 +178,9 @@ export default function App() {
       const result = await submitCierre(buildPayload("Enviado"));
       localStorage.removeItem(DRAFT_KEY);
       setIsLocked(true);
-      setToast({ type: "ok", message: result.message || "Cierre guardado correctamente." });
+      const message = result.message || "Cierre enviado correctamente.";
+      setStatusMessage(message);
+      setToast({ type: "ok", message });
     } catch (error) {
       setToast({ type: "error", message: error.message });
     } finally {
@@ -168,7 +201,23 @@ export default function App() {
       setMovimientos((current) =>
         current.map((mov) => ({ ...mov, oficina: nextSession.oficina })).filter((mov) => mov.oficina === nextSession.oficina)
       );
+      setValesAseguradora((current) => current.map((vale) => ({ ...vale, oficina: nextSession.oficina })));
     }
+  };
+
+  const clearCapture = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setForm({
+      ...initialForm,
+      usuarioCaptura: session?.nombre || session?.usuario || "",
+      oficina: session?.oficina || ""
+    });
+    setMovimientos([]);
+    setValesAseguradora([]);
+    setConteos(createInitialCashCounts(scopedCatalogos.oficinas, scopedCatalogos.denominaciones));
+    setIsLocked(false);
+    setStatusMessage("Captura limpia. Puedes iniciar un cierre nuevo.");
+    setToast({ type: "ok", message: "Captura limpia." });
   };
 
   const handleLogout = () => {
@@ -191,6 +240,7 @@ export default function App() {
         onSaveDraft={saveDraft}
         onSubmit={requestSubmit}
         onPrint={() => window.print()}
+        onClear={clearCapture}
         onLogout={handleLogout}
         isSubmitting={isSubmitting}
       />
@@ -204,6 +254,8 @@ export default function App() {
               enviarse a Google Sheets.
             </p>
           </section>
+
+          {statusMessage && <div className="inline-alert ok">{statusMessage}</div>}
 
           {session.rol === "ADMIN" ? (
             <AdminDashboard session={session} catalogos={catalogos} />
@@ -232,6 +284,11 @@ export default function App() {
                   denominaciones={scopedCatalogos.denominaciones}
                   onChange={setConteos}
                 />
+                <InsuranceVouchersTable
+                  oficina={scopedCatalogos.oficinas[0]}
+                  vales={valesAseguradora}
+                  onChange={setValesAseguradora}
+                />
                 <ObservationsSignatures form={form} onChange={updateForm} />
               </fieldset>
             </>
@@ -239,7 +296,14 @@ export default function App() {
         </div>
       </main>
 
-      <PrintView form={form} movimientos={movimientos} conteos={conteos} summaries={summaries} totals={totals} />
+      <PrintView
+        form={form}
+        movimientos={movimientos}
+        conteos={conteos}
+        valesAseguradora={valesAseguradora}
+        summaries={summaries}
+        totals={totals}
+      />
       <ConfirmModal
         open={confirm.open}
         warnings={confirm.warnings}
@@ -253,6 +317,12 @@ export default function App() {
 
 function mergeUnique(base, extra) {
   return Array.from(new Set([...base, ...extra].filter(Boolean)));
+}
+
+function normalizeDenominations(denominaciones) {
+  return (denominaciones || DEFAULT_CATALOGOS.denominaciones)
+    .map(Number)
+    .filter((value) => Number.isFinite(value) && value >= 0.5);
 }
 
 function ensureCashCounts(current, oficinas, denominaciones) {

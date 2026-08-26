@@ -12,6 +12,10 @@
 
 `conteoId`, `cierreId`, `oficina`, `concepto`, `denominacion`, `cantidad`, `importe`
 
+## CierreValesAseguradora
+
+`valeId`, `cierreId`, `oficina`, `ordenGrips`, `aseguradora`, `folioVale`, `vehiculo`, `marca`, `modelo`, `color`, `anio`, `comentarios`
+
 ## CierreOficinasResumen
 
 `resumenId`, `cierreId`, `oficina`, `efectivoReportado`, `efectivoContado`, `egresos`, `ingresos`, `liberaciones`, `kashpay`, `terminalBBVA`, `transferencia`, `pensiones`, `pendientes`, `importeSinPensiones`, `importeConPensiones`, `diferencia`

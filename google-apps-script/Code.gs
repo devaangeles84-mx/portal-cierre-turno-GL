@@ -55,6 +55,20 @@ const HEADERS = {
     "cantidad",
     "importe"
   ],
+  CierreValesAseguradora: [
+    "valeId",
+    "cierreId",
+    "oficina",
+    "ordenGrips",
+    "aseguradora",
+    "folioVale",
+    "vehiculo",
+    "marca",
+    "modelo",
+    "color",
+    "anio",
+    "comentarios"
+  ],
   CierreOficinasResumen: [
     "resumenId",
     "cierreId",
@@ -105,8 +119,6 @@ const DEFAULT_CATALOGOS = [
   ["Denominaciones", "2", "2", true, 9],
   ["Denominaciones", "1", "1", true, 10],
   ["Denominaciones", "0.5", "0.5", true, 11],
-  ["Denominaciones", "0.2", "0.2", true, 12],
-  ["Denominaciones", "0.1", "0.1", true, 13],
   ["Turnos", "matutino", "Matutino", true, 1],
   ["Turnos", "vespertino", "Vespertino", true, 2],
   ["Turnos", "nocturno", "Nocturno", true, 3],
@@ -182,6 +194,7 @@ function setupSheets() {
 
   seedCatalogos();
   seedUsuarios();
+  deactivateSmallDenominations();
 }
 
 function seedCatalogos() {
@@ -194,6 +207,21 @@ function seedUsuarios() {
   appendMissingRows("Usuarios", DEFAULT_USUARIOS, function (row) {
     return row[0];
   });
+}
+
+function deactivateSmallDenominations() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Catalogos");
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const typeIndex = headers.indexOf("tipoCatalogo");
+  const valueIndex = headers.indexOf("valor");
+  const activeIndex = headers.indexOf("activo");
+
+  for (let i = 1; i < values.length; i += 1) {
+    if (values[i][typeIndex] === "Denominaciones" && number(values[i][valueIndex]) < 0.5) {
+      sheet.getRange(i + 1, activeIndex + 1).setValue(false);
+    }
+  }
 }
 
 function appendMissingRows(sheetName, defaultRows, keyFn) {
@@ -251,6 +279,7 @@ function saveCierre(payload) {
   const cierre = payload.cierre || {};
   const movimientos = payload.movimientos || [];
   const conteos = payload.conteos || [];
+  const valesAseguradora = payload.valesAseguradora || [];
   const resumenOficinas = payload.resumenOficinas || [];
   const isDraft = payload.action === "saveDraft" || cierre.estatus === "Borrador";
 
@@ -341,6 +370,27 @@ function saveCierre(payload) {
   );
 
   appendRows(
+    "CierreValesAseguradora",
+    valesAseguradora.map(function (vale) {
+      const valeOffice = session.rol === "OFICINA" ? session.oficina : vale.oficina || oficina;
+      return [
+        vale.id || Utilities.getUuid(),
+        cierreId,
+        valeOffice || "",
+        vale.ordenGrips || "",
+        vale.aseguradora || "",
+        vale.folioVale || "",
+        vale.vehiculo || "",
+        vale.marca || "",
+        vale.modelo || "",
+        vale.color || "",
+        vale.anio || "",
+        vale.comentarios || ""
+      ];
+    })
+  );
+
+  appendRows(
     "CierreOficinasResumen",
     resumenOficinas.map(function (row) {
       const rowOffice = session.rol === "OFICINA" ? session.oficina : row.oficina;
@@ -419,6 +469,9 @@ function getCierre(payload) {
         return row.cierreId === cierreId;
       }),
       conteos: readObjects("CierreConteoEfectivo").filter(function (row) {
+        return row.cierreId === cierreId;
+      }),
+      valesAseguradora: readObjects("CierreValesAseguradora").filter(function (row) {
         return row.cierreId === cierreId;
       }),
       resumenOficinas: readObjects("CierreOficinasResumen").filter(function (row) {
