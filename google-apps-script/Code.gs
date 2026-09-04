@@ -507,6 +507,8 @@ function listCierres(payload) {
   rows = rows.filter(function (row) {
     const fecha = normalizeDateKey(row.fechaCierre);
     if (filters.fecha && fecha !== filters.fecha) return false;
+    if (filters.fechaInicio && fecha < normalizeDateKey(filters.fechaInicio)) return false;
+    if (filters.fechaFin && fecha > normalizeDateKey(filters.fechaFin)) return false;
     if (filters.turno && row.turno !== filters.turno) return false;
     if (filters.oficina && row.oficina !== filters.oficina) return false;
     if (filters.usuario && String(row.usuarioCaptura).toLowerCase().indexOf(String(filters.usuario).toLowerCase()) === -1) return false;
@@ -624,11 +626,22 @@ function reopenCierre(payload) {
   const headers = values[0];
   const idIndex = headers.indexOf("cierreId");
   const statusIndex = headers.indexOf("estatus");
+  const sentAtIndex = headers.indexOf("timestampEnviado");
   for (let i = 1; i < values.length; i += 1) {
     if (values[i][idIndex] === payload.cierreId) {
       if (normalizeStatus(values[i][statusIndex]) === "VALIDADO") throw new Error("No se puede reabrir un cierre validado.");
+      if (normalizeStatus(values[i][statusIndex]) !== "ENVIADO") throw new Error("Solo se pueden reabrir cierres enviados.");
       sheet.getRange(i + 1, statusIndex + 1).setValue("Borrador");
-      return { ok: true, message: "Cierre reabierto" };
+      if (sentAtIndex >= 0) sheet.getRange(i + 1, sentAtIndex + 1).setValue("");
+      audit(session, {
+        cierreId: payload.cierreId,
+        oficina: values[i][headers.indexOf("oficina")],
+        fechaCierre: values[i][headers.indexOf("fechaCierre")],
+        turno: values[i][headers.indexOf("turno")],
+        estatus: "Borrador",
+        accion: "REABRIR_CIERRE"
+      });
+      return { ok: true, message: "Cierre reabierto como borrador." };
     }
   }
   throw new Error("Cierre no encontrado.");

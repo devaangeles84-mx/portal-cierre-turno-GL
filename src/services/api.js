@@ -129,6 +129,23 @@ export async function deleteBorrador({ sessionToken, cierreId }) {
   }
 }
 
+export async function reopenCierre({ sessionToken, cierreId }) {
+  try {
+    const response = await fetch("/api/reopen-cierre", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionToken, cierreId })
+    });
+    return await parseResponse(response);
+  } catch (error) {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      reopenLocalCierre(cierreId);
+      return { ok: true, message: "Cierre reabierto localmente." };
+    }
+    throw error;
+  }
+}
+
 function localDemoSession(usuario) {
   const users = {
     admin: { usuario: "admin", nombre: "Administrador", rol: "ADMIN", oficina: "" },
@@ -204,6 +221,8 @@ function listLocalCierres(filters = {}) {
     .map((item) => item.cierre)
     .filter((cierre) => {
       if (filters.fecha && cierre.fechaCierre !== filters.fecha) return false;
+      if (filters.fechaInicio && cierre.fechaCierre < filters.fechaInicio) return false;
+      if (filters.fechaFin && cierre.fechaCierre > filters.fechaFin) return false;
       if (filters.turno && cierre.turno !== filters.turno) return false;
       if (filters.oficina && cierre.oficina !== filters.oficina) return false;
       if (filters.usuario && !String(cierre.usuarioCaptura || "").toLowerCase().includes(String(filters.usuario).toLowerCase())) return false;
@@ -233,6 +252,26 @@ function validateLocalCierre(cierreId, observacionValidacion) {
       accion: "VALIDAR_CIERRE",
       usuarioId: "conta",
       usuarioNombre: "Contabilidad",
+      oficinaSeleccionada: cierres[index].cierre.oficina,
+      timestamp: new Date().toISOString()
+    }
+  ];
+  localStorage.setItem(LOCAL_CIERRES_KEY, JSON.stringify(cierres));
+}
+
+function reopenLocalCierre(cierreId) {
+  const cierres = readLocalCierres();
+  const index = cierres.findIndex((item) => item.cierre.cierreId === cierreId);
+  if (index < 0) throw new Error("Cierre no encontrado.");
+  if (cierres[index].cierre.estatus === "Validado") throw new Error("No se puede reabrir un cierre validado.");
+  cierres[index].cierre.estatus = "Borrador";
+  cierres[index].cierre.timestampEnviado = "";
+  cierres[index].auditoria = [
+    ...(cierres[index].auditoria || []),
+    {
+      accion: "REABRIR_CIERRE",
+      usuarioId: "admin",
+      usuarioNombre: "Administrador",
       oficinaSeleccionada: cierres[index].cierre.oficina,
       timestamp: new Date().toISOString()
     }

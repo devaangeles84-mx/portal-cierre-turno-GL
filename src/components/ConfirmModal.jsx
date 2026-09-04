@@ -7,6 +7,7 @@ export default function ConfirmModal({
   details = [],
   cancelLabel = "Cancelar",
   confirmLabel = "Confirmar cierre",
+  loading = false,
   onCancel,
   onConfirm
 }) {
@@ -31,11 +32,11 @@ export default function ConfirmModal({
           <p key={warning}>{warning}</p>
         ))}
         <div className="modal-actions">
-          <button type="button" className="secondary" onClick={onCancel}>
+          <button type="button" className="secondary" onClick={onCancel} disabled={loading}>
             {cancelLabel}
           </button>
-          <button type="button" className="primary" onClick={onConfirm}>
-            {confirmLabel}
+          <button type="button" className="primary" onClick={onConfirm} disabled={loading}>
+            {loading ? "Procesando" : confirmLabel}
           </button>
         </div>
       </div>

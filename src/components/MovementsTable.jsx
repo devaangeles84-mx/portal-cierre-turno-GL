@@ -32,7 +32,6 @@ export default function MovementsTable({ catalogos, movimientos, onChange }) {
           <h2>Movimientos</h2>
         </div>
         <button type="button" className="secondary icon-button" onClick={addMovement}>
-          <span aria-hidden="true">+</span>
           <span>Agregar fila</span>
         </button>
       </div>
@@ -54,7 +53,10 @@ export default function MovementsTable({ catalogos, movimientos, onChange }) {
             </tr>
           </thead>
           <tbody>
-            {movimientos.map((mov) => (
+            {movimientos.map((mov) => {
+              const requiresAuthorization = ["Egreso", "Faltante"].includes(mov.tipoMovimiento);
+
+              return (
               <tr key={mov.id}>
                 <td>
                   <select value={mov.oficina} onChange={(event) => updateMovement(mov.id, "oficina", event.target.value)}>
@@ -109,8 +111,12 @@ export default function MovementsTable({ catalogos, movimientos, onChange }) {
                   </select>
                 </td>
                 <td>
-                  <select value={mov.autorizo} onChange={(event) => updateMovement(mov.id, "autorizo", event.target.value)}>
-                    <option value="">Selecciona</option>
+                  <select
+                    value={requiresAuthorization ? mov.autorizo : ""}
+                    onChange={(event) => updateMovement(mov.id, "autorizo", event.target.value)}
+                    disabled={!requiresAuthorization}
+                  >
+                    <option value="">{requiresAuthorization ? "Selecciona" : "No aplica"}</option>
                     {catalogos.autorizo.map((autorizo) => (
                       <option key={autorizo} value={autorizo}>
                         {autorizo}
@@ -134,12 +140,13 @@ export default function MovementsTable({ catalogos, movimientos, onChange }) {
                   />
                 </td>
                 <td>
-                  <button type="button" className="ghost square-button" onClick={() => removeMovement(mov.id)} title="Eliminar fila">
-                    <span aria-hidden="true">x</span>
+                  <button type="button" className="ghost" onClick={() => removeMovement(mov.id)} title="Eliminar fila">
+                    Eliminar
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

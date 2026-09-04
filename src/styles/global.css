@@ -756,10 +756,22 @@ dd {
 
 .admin-filters {
   display: grid;
-  grid-template-columns: minmax(220px, 1.2fr) repeat(5, minmax(130px, 1fr)) auto;
+  grid-template-columns: minmax(220px, 1.2fr) repeat(7, minmax(130px, 1fr)) auto;
   gap: 12px;
   align-items: end;
   padding: 18px;
+}
+
+.date-shortcuts {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.date-shortcuts button {
+  min-height: 36px;
+  padding: 7px 11px;
 }
 
 .admin-card {
@@ -919,10 +931,6 @@ dd {
 
   .brand-logo {
     width: 112px;
-  }
-
-  .icon-button span {
-    display: none;
   }
 
   .offices-grid,

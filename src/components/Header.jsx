@@ -75,19 +75,15 @@ export default function Header({
         {!isBackOffice && (
           <>
             <button type="button" className="secondary icon-button" onClick={onSaveDraft} title="Guardar borrador">
-              <span aria-hidden="true">[S]</span>
               <span>Guardar</span>
             </button>
             <button type="button" className="secondary icon-button" onClick={onPrint} title="Vista de impresion">
-              <span aria-hidden="true">[P]</span>
               <span>Imprimir</span>
             </button>
             <button type="button" className="secondary icon-button" onClick={onClear} title="Limpiar captura">
-              <span aria-hidden="true">[L]</span>
               <span>Limpiar</span>
             </button>
             <button type="button" className="primary icon-button" onClick={onSubmit} disabled={isSubmitting}>
-              <span aria-hidden="true">{"[>]"}</span>
               <span>{isSubmitting ? "Enviando" : "Enviar"}</span>
             </button>
           </>

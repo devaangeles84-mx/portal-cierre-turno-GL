@@ -33,7 +33,6 @@ export default function InsuranceVouchersTable({ oficina, vales, onChange }) {
           <h2>Vales físicos de aseguradora</h2>
         </div>
         <button type="button" className="secondary icon-button" onClick={addVoucher}>
-          <span aria-hidden="true">+</span>
           <span>Agregar vale</span>
         </button>
       </div>
@@ -131,9 +130,9 @@ export default function InsuranceVouchersTable({ oficina, vales, onChange }) {
                     />
                   </td>
                   <td>
-                    <button type="button" className="ghost square-button" onClick={() => removeVoucher(vale.id)} title="Eliminar vale">
-                    <span aria-hidden="true">x</span>
-                    </button>
+                  <button type="button" className="ghost" onClick={() => removeVoucher(vale.id)} title="Eliminar vale">
+                    Eliminar
+                  </button>
                   </td>
                 </tr>
               ))

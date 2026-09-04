@@ -42,7 +42,7 @@ export function validateCierre({ form, oficinas, movimientos, summaries }) {
     if (amount > 0 && !mov.division) {
       errors.push(`Selecciona division en la fila ${index + 1}.`);
     }
-    if (amount > 0 && !mov.autorizo) {
+    if (amount > 0 && ["Egreso", "Faltante"].includes(mov.tipoMovimiento) && !mov.autorizo) {
       errors.push(`Selecciona quien autorizo en la fila ${index + 1}.`);
     }
   });

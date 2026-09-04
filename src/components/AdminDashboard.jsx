@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { deleteBorrador, getCierreDetalle, listCierres, validateCierreContabilidad } from "../services/api";
+import { deleteBorrador, getCierreDetalle, listCierres, reopenCierre, validateCierreContabilidad } from "../services/api";
+import ConfirmModal from "./ConfirmModal";
 import { formatMoney, toNumber } from "../utils/money";
 
 const emptyFilters = {
   fecha: "",
+  fechaInicio: "",
+  fechaFin: "",
   turno: "",
   oficina: "",
   usuario: "",
@@ -19,6 +22,8 @@ export default function AdminDashboard({ session, catalogos }) {
   const [validationNote, setValidationNote] = useState("");
   const [printMode, setPrintMode] = useState("summary");
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
 
   const totals = useMemo(() => {
     return cierres.reduce(
@@ -70,6 +75,25 @@ export default function AdminDashboard({ session, catalogos }) {
     }
   };
 
+  const setDateRange = (range) => {
+    const { fechaInicio, fechaFin } = getDateRange(range);
+    setFilters((current) => ({
+      ...current,
+      fecha: "",
+      fechaInicio,
+      fechaFin
+    }));
+  };
+
+  const clearDateFilters = () => {
+    setFilters((current) => ({
+      ...current,
+      fecha: "",
+      fechaInicio: "",
+      fechaFin: ""
+    }));
+  };
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,40 +116,106 @@ export default function AdminDashboard({ session, catalogos }) {
       setMessage("Captura una observacion de validacion para aceptar un cierre con diferencia.");
       return;
     }
-    const confirmed = window.confirm(
-      `Validar cierre\n\nFecha: ${formatDate(cierre.fechaCierre)}\nOficina: ${cierre.oficina}\nUsuario que realizo el cierre: ${
-        cierre.usuarioCaptura
-      }\nDiferencia: ${formatMoney(cierre.diferenciaGeneral || cierre.diferencia)}\n\nConfirma que este cierre fue revisado por Contabilidad?`
-    );
-    if (!confirmed) return;
+    setPendingAction({
+      type: "validate",
+      title: "Validar cierre",
+      confirmLabel: "Validar cierre",
+      warnings: ["Confirma que este cierre fue revisado por Contabilidad."],
+      details: [
+        ["Fecha", formatDate(cierre.fechaCierre)],
+        ["Oficina", cierre.oficina],
+        ["Usuario que realizo el cierre", cierre.usuarioCaptura],
+        ["Diferencia", formatMoney(cierre.diferenciaGeneral || cierre.diferencia)]
+      ],
+      cierre
+    });
+  };
+
+  const confirmValidate = async (cierre) => {
     try {
+      setActionLoading(true);
       await validateCierreContabilidad({
         sessionToken: session.sessionToken,
         cierreId: cierre.cierreId,
         observacionValidacion: validationNote
       });
       setMessage("Cierre validado por Contabilidad.");
+      setPendingAction(null);
       await load();
       await viewDetail(cierre.cierreId);
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const removeDraft = async (cierre) => {
-    const confirmed = window.confirm(
-      `Eliminar borrador\n\nOficina: ${cierre.oficina}\nFecha: ${formatDate(cierre.fechaCierre)}\nUsuario: ${
-        cierre.usuarioCaptura
-      }\n\nEsta seguro?`
-    );
-    if (!confirmed) return;
+    setPendingAction({
+      type: "delete",
+      title: "Eliminar borrador",
+      confirmLabel: "Eliminar",
+      warnings: ["Esta accion elimina el borrador y sus registros asociados."],
+      details: [
+        ["Oficina", cierre.oficina],
+        ["Fecha", formatDate(cierre.fechaCierre)],
+        ["Usuario", cierre.usuarioCaptura]
+      ],
+      cierre
+    });
+  };
+
+  const confirmDelete = async (cierre) => {
     try {
+      setActionLoading(true);
       await deleteBorrador({ sessionToken: session.sessionToken, cierreId: cierre.cierreId });
       setMessage("Borrador eliminado.");
+      setPendingAction(null);
       await load();
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setActionLoading(false);
     }
+  };
+
+  const reopenSelected = async () => {
+    const cierre = selected?.cierre;
+    if (!cierre) return;
+    setPendingAction({
+      type: "reopen",
+      title: "Reabrir cierre",
+      confirmLabel: "Reabrir cierre",
+      warnings: ["El cierre volvera a Borrador para poder corregirse."],
+      details: [
+        ["Oficina", cierre.oficina],
+        ["Fecha", formatDate(cierre.fechaCierre)],
+        ["Usuario", cierre.usuarioCaptura]
+      ],
+      cierre
+    });
+  };
+
+  const confirmReopen = async (cierre) => {
+    try {
+      setActionLoading(true);
+      const result = await reopenCierre({ sessionToken: session.sessionToken, cierreId: cierre.cierreId });
+      setMessage(result.message || "Cierre reabierto.");
+      setPendingAction(null);
+      await load();
+      await viewDetail(cierre.cierreId);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const confirmPendingAction = () => {
+    if (!pendingAction?.cierre) return;
+    if (pendingAction.type === "validate") confirmValidate(pendingAction.cierre);
+    if (pendingAction.type === "delete") confirmDelete(pendingAction.cierre);
+    if (pendingAction.type === "reopen") confirmReopen(pendingAction.cierre);
   };
 
   const printSummary = () => {
@@ -147,7 +237,27 @@ export default function AdminDashboard({ session, catalogos }) {
         </div>
         <label>
           Fecha
-          <input type="date" value={filters.fecha} onChange={(event) => setFilters({ ...filters, fecha: event.target.value })} />
+          <input
+            type="date"
+            value={filters.fecha}
+            onChange={(event) => setFilters({ ...filters, fecha: event.target.value, fechaInicio: "", fechaFin: "" })}
+          />
+        </label>
+        <label>
+          Fecha inicio
+          <input
+            type="date"
+            value={filters.fechaInicio}
+            onChange={(event) => setFilters({ ...filters, fecha: "", fechaInicio: event.target.value })}
+          />
+        </label>
+        <label>
+          Fecha fin
+          <input
+            type="date"
+            value={filters.fechaFin}
+            onChange={(event) => setFilters({ ...filters, fecha: "", fechaFin: event.target.value })}
+          />
         </label>
         <label>
           Turno
@@ -187,6 +297,23 @@ export default function AdminDashboard({ session, catalogos }) {
         <button type="button" className="primary" onClick={load} disabled={loading}>
           {loading ? "Cargando" : "Filtrar"}
         </button>
+        <div className="date-shortcuts" aria-label="Filtros rapidos de fecha">
+          <button type="button" className="secondary" onClick={() => setDateRange("today")}>
+            Hoy
+          </button>
+          <button type="button" className="secondary" onClick={() => setDateRange("week")}>
+            Esta semana
+          </button>
+          <button type="button" className="secondary" onClick={() => setDateRange("month")}>
+            Este mes
+          </button>
+          <button type="button" className="secondary" onClick={() => setDateRange("lastMonth")}>
+            Mes pasado
+          </button>
+          <button type="button" className="secondary" onClick={clearDateFilters}>
+            Sin fecha
+          </button>
+        </div>
       </div>
 
       {message && <div className="status-box warning">{message}</div>}
@@ -221,7 +348,6 @@ export default function AdminDashboard({ session, catalogos }) {
             <h2>Listado</h2>
           </div>
           <button type="button" className="secondary icon-button" onClick={printSummary}>
-            <span aria-hidden="true">[P]</span>
             <span>Imprimir resumen</span>
           </button>
         </div>
@@ -255,12 +381,15 @@ export default function AdminDashboard({ session, catalogos }) {
                       className="secondary icon-button"
                       onClick={() => viewDetail(cierre.cierreId || cierre.idCierre)}
                     >
-                      <span aria-hidden="true">[V]</span>
                       <span>Ver</span>
                     </button>
                     {session.rol === "ADMIN" && normalizeStatus(cierre.estatus) === "BORRADOR" && (
-                      <button type="button" className="secondary icon-button danger-action" onClick={() => removeDraft(cierre)}>
-                        <span aria-hidden="true">[X]</span>
+                      <button
+                        type="button"
+                        className="secondary icon-button danger-action"
+                        onClick={() => removeDraft(cierre)}
+                        disabled={actionLoading}
+                      >
                         <span>Eliminar borrador</span>
                       </button>
                     )}
@@ -280,21 +409,35 @@ export default function AdminDashboard({ session, catalogos }) {
           onValidationNote={setValidationNote}
           onPrint={printSelected}
           onValidate={validateSelected}
+          onReopen={reopenSelected}
+          actionLoading={actionLoading}
         />
       )}
 
       <AdminPrintView mode={printMode} cierres={cierres} selected={selected} filters={filters} totals={totals} />
+      <ConfirmModal
+        open={Boolean(pendingAction)}
+        title={pendingAction?.title}
+        warnings={pendingAction?.warnings || []}
+        details={pendingAction?.details || []}
+        cancelLabel="Cancelar"
+        confirmLabel={pendingAction?.confirmLabel || "Confirmar"}
+        loading={actionLoading}
+        onCancel={() => setPendingAction(null)}
+        onConfirm={confirmPendingAction}
+      />
     </section>
   );
 }
 
-function CierreDetail({ selected, session, validationNote, onValidationNote, onPrint, onValidate }) {
+function CierreDetail({ selected, session, validationNote, onValidationNote, onPrint, onValidate, onReopen, actionLoading }) {
   const cierre = selected.cierre || {};
   const movimientos = selected.movimientos || [];
   const conteos = selected.conteos || [];
   const vales = selected.valesAseguradora || [];
   const auditoria = selected.auditoria || [];
   const canValidate = session.rol === "CONTABILIDAD" && normalizeStatus(cierre.estatus) === "ENVIADO";
+  const canReopen = session.rol === "ADMIN" && normalizeStatus(cierre.estatus) === "ENVIADO";
   const difference = toNumber(cierre.diferenciaGeneral || cierre.diferencia);
 
   return (
@@ -306,13 +449,16 @@ function CierreDetail({ selected, session, validationNote, onValidationNote, onP
         </div>
         <div className="header-actions compact-actions">
           <button type="button" className="secondary icon-button" onClick={onPrint}>
-            <span aria-hidden="true">[P]</span>
             <span>Imprimir cierre</span>
           </button>
+          {canReopen && (
+            <button type="button" className="secondary icon-button" onClick={onReopen} disabled={actionLoading}>
+              <span>{actionLoading ? "Reabriendo" : "Reabrir cierre"}</span>
+            </button>
+          )}
           {canValidate && (
-            <button type="button" className="primary icon-button" onClick={onValidate}>
-              <span aria-hidden="true">[OK]</span>
-              <span>Validar cierre</span>
+            <button type="button" className="primary icon-button" onClick={onValidate} disabled={actionLoading}>
+              <span>{actionLoading ? "Validando" : "Validar cierre"}</span>
             </button>
           )}
         </div>
@@ -537,7 +683,7 @@ function AdminPrintView({ mode, cierres, selected, filters, totals }) {
         <>
           <PrintHeader title="Resumen de Cierres" subtitle="Consolidado por filtros activos" />
           <div className="print-meta">
-            <span>Fecha: {filters.fecha ? formatDate(filters.fecha) : "Todas"}</span>
+            <span>Fecha: {formatFilterDates(filters)}</span>
             <span>Turno: {filters.turno || "Todos"}</span>
             <span>Oficina: {filters.oficina || "Todas"}</span>
             <span>Estatus: {filters.estatus ? displayStatus(filters.estatus) : "Todos"}</span>
@@ -649,9 +795,56 @@ function formatDate(value) {
   return text;
 }
 
+function formatFilterDates(filters) {
+  if (filters.fecha) return formatDate(filters.fecha);
+  if (filters.fechaInicio && filters.fechaFin) return `${formatDate(filters.fechaInicio)} a ${formatDate(filters.fechaFin)}`;
+  if (filters.fechaInicio) return `Desde ${formatDate(filters.fechaInicio)}`;
+  if (filters.fechaFin) return `Hasta ${formatDate(filters.fechaFin)}`;
+  return "Todas";
+}
+
 function formatDateTime(value) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
+}
+
+function getDateRange(range) {
+  const today = new Date();
+  const start = new Date(today);
+  const end = new Date(today);
+
+  if (range === "week") {
+    const day = today.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    start.setDate(today.getDate() + mondayOffset);
+    end.setTime(start.getTime());
+    end.setDate(start.getDate() + 6);
+  }
+
+  if (range === "month") {
+    start.setDate(1);
+    end.setTime(start.getTime());
+    end.setMonth(start.getMonth() + 1, 0);
+  }
+
+  if (range === "lastMonth") {
+    start.setDate(1);
+    start.setMonth(start.getMonth() - 1);
+    end.setTime(start.getTime());
+    end.setMonth(start.getMonth() + 1, 0);
+  }
+
+  return {
+    fechaInicio: toDateInputValue(start),
+    fechaFin: toDateInputValue(end)
+  };
+}
+
+function toDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }

@@ -125,10 +125,13 @@ export default function App() {
       const message = result.message || "Borrador guardado.";
       setStatusMessage(message);
       setToast({ type: "ok", message });
-    } catch {
-      const message = "Borrador guardado localmente. No se pudo confirmar en Sheets todavia.";
+    } catch (error) {
+      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      const message = isLocal
+        ? "Borrador guardado localmente. No se pudo confirmar en Sheets todavia."
+        : `No se pudo guardar en Sheets: ${error.message}`;
       setStatusMessage(message);
-      setToast({ type: "ok", message });
+      setToast({ type: isLocal ? "ok" : "error", message });
     }
   };
 
