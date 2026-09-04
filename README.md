@@ -10,8 +10,9 @@ Aplicacion web para capturar cierres diarios de operacion administrativa/caja, c
 - Arqueo fisico de efectivo por denominacion.
 - Registro de vales fisicos de aseguradora para enviar a CXC en sobre o valija.
 - Resumen automatico con diferencias.
-- Borrador local en el navegador.
-- Vista de impresion.
+- Borrador unico por fecha, turno y oficina.
+- Vista de impresion para cierre individual y resumen consolidado.
+- Panel de Contabilidad para validar cierres enviados.
 - Netlify Functions para no exponer tokens en el frontend.
 - Google Apps Script para crear hojas, catalogos y guardar cierres.
 
@@ -61,13 +62,14 @@ Apps Script crea la hoja `Usuarios` con usuarios temporales para pruebas. Cambia
 | Usuario | Contrasena temporal | Rol | Oficina |
 |---|---|---|---|
 | admin | admin123 | ADMIN | Todas |
+| conta | conta123 | CONTABILIDAD | Todas |
 | alvarez | alvarez123 | OFICINA | Alvarez |
 | partida | partida123 | OFICINA | La Partida (Matamoros) |
 | union | union123 | OFICINA | La Union |
 | triunfo | triunfo123 | OFICINA | El Triunfo |
 | gomez | gomez123 | OFICINA | Encierro Gomez (Walmart) |
 
-En `localhost` hay un modo demo para poder navegar la app aunque las funciones de Netlify no esten corriendo. En Netlify, el login pasa por Netlify Functions y Google Apps Script.
+En `localhost` hay un modo demo para poder navegar la app aunque las funciones de Netlify no esten corriendo. Los cierres locales se guardan en el navegador para poder probar captura, administrador y contabilidad. En Netlify, el login pasa por Netlify Functions y Google Apps Script.
 
 ### Si La Pantalla Sale En Blanco
 
@@ -117,7 +119,9 @@ Usa el mismo token despues en Netlify.
    - `CierresTurno`
    - `CierreMovimientos`
    - `CierreConteoEfectivo`
+   - `CierreValesAseguradora`
    - `CierreOficinasResumen`
+   - `CierreAuditoria`
    - `Catalogos`
 
 Puedes editar el catalogo de oficinas directamente en la hoja `Catalogos`.
@@ -171,8 +175,8 @@ Si prefieres, tambien puedes crear el repositorio con GitHub Desktop y arrastrar
 1. Abre la URL publicada por Netlify.
 2. Captura fecha, turno y usuario.
 3. Agrega uno o varios movimientos.
-4. Captura efectivo reportado por oficina.
-5. Captura el conteo fisico en `Conteo de efectivo`.
+4. Captura movimientos con division y autorizacion.
+5. Captura el conteo fisico consolidado en `Conteo de efectivo`.
 6. Si hay diferencia, escribe una observacion.
 7. Presiona `Enviar cierre`.
 8. Abre Google Sheets y valida que se hayan llenado:
@@ -200,13 +204,23 @@ Campos:
 
 Estos datos se guardan en la hoja `CierreValesAseguradora`.
 
-## Recomendaciones Futuras
+## Ciclo del Cierre
 
-- Login por usuario y roles.
-- Historial de cierres con busqueda por fecha/oficina.
-- Edicion controlada de cierres enviados.
-- Firma digital con canvas.
-- Adjuntar comprobantes o fotos.
-- Dashboard semanal/mensual.
-- Exportacion a PDF.
-- Auditoria de cambios.
+El flujo administrativo queda:
+
+```text
+Borrador -> Enviado -> Validado por Contabilidad
+```
+
+Los usuarios de oficina pueden capturar borradores y enviar cierres. El administrador puede consultar todos los estados y eliminar solamente borradores. Contabilidad puede consultar cierres enviados/validados y validar un cierre enviado; si existe diferencia, debe agregar observacion de validacion.
+
+## Calculo Principal
+
+```text
+efectivoEsperado = movimientos en efectivo - egresos
+efectivoContado = suma del arqueo fisico consolidado
+totalGeneral = efectivoEsperado + CLIP + Terminal BBVA + Transferencia
+diferenciaGeneral = efectivoContado - efectivoEsperado
+```
+
+`Sobrante` y `Faltante` se guardan y se muestran en detalle/reportes, pero no incrementan los metodos de pago para evitar doble conteo.

@@ -1,6 +1,4 @@
 import React from "react";
-import AlertCircle from "lucide-react/dist/esm/icons/alert-circle.js";
-import CheckCircle2 from "lucide-react/dist/esm/icons/circle-check-big.js";
 import { formatMoney } from "../utils/money";
 
 export default function SummaryPanel({ summaries, totals }) {
@@ -15,7 +13,7 @@ export default function SummaryPanel({ summaries, totals }) {
       </div>
 
       <div className={`status-box ${hasDifferences ? "warning" : "ok"}`}>
-        {hasDifferences ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
+        <span aria-hidden="true">{hasDifferences ? "!" : "OK"}</span>
         <span>
           {hasDifferences
             ? `Diferencia general: ${formatMoney(totals.diferenciaGeneral)}`
@@ -29,8 +27,8 @@ export default function SummaryPanel({ summaries, totals }) {
           <dd>{formatMoney(totals.totalEfectivo)}</dd>
         </div>
         <div>
-          <dt>Kashpay</dt>
-          <dd>{formatMoney(totals.totalKashpay)}</dd>
+          <dt>CLIP</dt>
+          <dd>{formatMoney(totals.totalClip || totals.totalKashpay)}</dd>
         </div>
         <div>
           <dt>Terminal BBVA</dt>
@@ -55,6 +53,14 @@ export default function SummaryPanel({ summaries, totals }) {
         <div>
           <dt>Liberaciones</dt>
           <dd>{formatMoney(totals.totalLiberaciones)}</dd>
+        </div>
+        <div>
+          <dt>Sobrantes</dt>
+          <dd>{formatMoney(totals.totalSobrantes)}</dd>
+        </div>
+        <div>
+          <dt>Faltantes</dt>
+          <dd>{formatMoney(totals.totalFaltantes)}</dd>
         </div>
       </dl>
 

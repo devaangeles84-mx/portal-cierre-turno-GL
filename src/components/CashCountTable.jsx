@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { formatMoney, toNumber } from "../utils/money";
 
 export default function CashCountTable({ conteos, oficinas, onChange }) {
   const [selectedOffice, setSelectedOffice] = useState(oficinas[0] || "");
-  const [selectedConcept, setSelectedConcept] = useState("Liberaciones");
 
-  const concepts = Array.from(new Set(conteos.map((row) => row.concepto)));
-  const filtered = conteos.filter((row) => row.oficina === selectedOffice && row.concepto === selectedConcept);
+  useEffect(() => {
+    setSelectedOffice(oficinas[0] || "");
+  }, [oficinas]);
+
+  const filtered = conteos.filter((row) => row.oficina === selectedOffice);
   const total = filtered.reduce((sum, row) => sum + toNumber(row.cantidad) * toNumber(row.denominacion), 0);
 
   const updateCount = (id, cantidad) => {
@@ -31,18 +33,7 @@ export default function CashCountTable({ conteos, oficinas, onChange }) {
             </option>
           ))}
         </select>
-        <div className="segmented-control">
-          {concepts.map((concept) => (
-            <button
-              type="button"
-              key={concept}
-              className={selectedConcept === concept ? "active" : ""}
-              onClick={() => setSelectedConcept(concept)}
-            >
-              {concept}
-            </button>
-          ))}
-        </div>
+        <strong className="cash-count-label">Total efectivo contado</strong>
       </div>
 
       <div className="cash-grid">

@@ -1,6 +1,4 @@
 import React from "react";
-import Plus from "lucide-react/dist/esm/icons/plus.js";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2.js";
 import { createId } from "../utils/id";
 
 function newVoucher(oficina) {
@@ -35,7 +33,7 @@ export default function InsuranceVouchersTable({ oficina, vales, onChange }) {
           <h2>Vales físicos de aseguradora</h2>
         </div>
         <button type="button" className="secondary icon-button" onClick={addVoucher}>
-          <Plus size={18} />
+          <span aria-hidden="true">+</span>
           <span>Agregar vale</span>
         </button>
       </div>
@@ -134,7 +132,7 @@ export default function InsuranceVouchersTable({ oficina, vales, onChange }) {
                   </td>
                   <td>
                     <button type="button" className="ghost square-button" onClick={() => removeVoucher(vale.id)} title="Eliminar vale">
-                      <Trash2 size={17} />
+                    <span aria-hidden="true">x</span>
                     </button>
                   </td>
                 </tr>

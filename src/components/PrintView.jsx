@@ -38,9 +38,10 @@ export default function PrintView({ form, movimientos, conteos, valesAseguradora
             <th>Oficina</th>
             <th>Efectivo esperado</th>
             <th>Efectivo contado</th>
-            <th>Sin pensiones</th>
-            <th>Con pensiones</th>
+            <th>CLIP</th>
             <th>Pensiones</th>
+            <th>Sobrante</th>
+            <th>Faltante</th>
             <th>Total neto</th>
             <th>Diferencia</th>
           </tr>
@@ -51,9 +52,10 @@ export default function PrintView({ form, movimientos, conteos, valesAseguradora
               <td>{summary.oficina}</td>
               <td>{formatMoney(summary.efectivoEsperado)}</td>
               <td>{formatMoney(summary.efectivoContado)}</td>
-              <td>{formatMoney(summary.importeSinPensiones)}</td>
-              <td>{formatMoney(summary.importeConPensiones)}</td>
+              <td>{formatMoney(summary.clip || summary.kashpay)}</td>
               <td>{formatMoney(summary.pensiones)}</td>
+              <td>{formatMoney(summary.sobrantes)}</td>
+              <td>{formatMoney(summary.faltantes)}</td>
               <td>{formatMoney(summary.totalOficina)}</td>
               <td>{formatMoney(summary.diferencia)}</td>
             </tr>
@@ -92,7 +94,6 @@ export default function PrintView({ form, movimientos, conteos, valesAseguradora
         <thead>
           <tr>
             <th>Oficina</th>
-            <th>Concepto</th>
             <th>Denominacion</th>
             <th>Cantidad</th>
             <th>Importe</th>
@@ -102,7 +103,6 @@ export default function PrintView({ form, movimientos, conteos, valesAseguradora
           {countedRows.map((row) => (
             <tr key={row.id}>
               <td>{row.oficina}</td>
-              <td>{row.concepto}</td>
               <td>${row.denominacion}</td>
               <td>{row.cantidad}</td>
               <td>{formatMoney(toNumber(row.cantidad) * row.denominacion)}</td>
@@ -149,8 +149,8 @@ export default function PrintView({ form, movimientos, conteos, valesAseguradora
       <p>Observaciones: {form.observaciones || "Sin observaciones"}</p>
       <div className="print-signatures">
         <span>Entrega: {form.entregaNombre}</span>
-        <span>Recibe: {form.recibeNombre}</span>
         <span>Traslada: {form.trasladaNombre}</span>
+        <span>Ruta: {form.rutaValija || "—"}</span>
       </div>
     </section>
   );

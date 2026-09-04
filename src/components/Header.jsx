@@ -1,8 +1,4 @@
 import React from "react";
-import Printer from "lucide-react/dist/esm/icons/printer.js";
-import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw.js";
-import Save from "lucide-react/dist/esm/icons/save.js";
-import Send from "lucide-react/dist/esm/icons/send.js";
 
 export default function Header({
   form,
@@ -16,7 +12,7 @@ export default function Header({
   onLogout,
   isSubmitting
 }) {
-  const isAdmin = session?.rol === "ADMIN";
+  const isBackOffice = session?.rol === "ADMIN" || session?.rol === "CONTABILIDAD";
 
   return (
     <header className="app-header">
@@ -31,7 +27,7 @@ export default function Header({
       </div>
 
       <div className="header-fields">
-        {!isAdmin && (
+        {!isBackOffice && (
           <>
             <label>
               Fecha
@@ -51,6 +47,16 @@ export default function Header({
                 ))}
               </select>
             </label>
+            <label>
+              Oficina
+              <select value={form.oficina} onChange={(event) => onChange("oficina", event.target.value)}>
+                {catalogos.oficinas.map((oficina) => (
+                  <option key={oficina} value={oficina}>
+                    {oficina}
+                  </option>
+                ))}
+              </select>
+            </label>
           </>
         )}
         <label>
@@ -63,31 +69,25 @@ export default function Header({
             disabled={Boolean(session)}
           />
         </label>
-        {session?.oficina && (
-          <label>
-            Oficina
-            <input type="text" value={session.oficina} disabled />
-          </label>
-        )}
       </div>
 
       <div className="header-actions">
-        {!isAdmin && (
+        {!isBackOffice && (
           <>
             <button type="button" className="secondary icon-button" onClick={onSaveDraft} title="Guardar borrador">
-              <Save size={18} />
+              <span aria-hidden="true">[S]</span>
               <span>Guardar</span>
             </button>
             <button type="button" className="secondary icon-button" onClick={onPrint} title="Vista de impresion">
-              <Printer size={18} />
+              <span aria-hidden="true">[P]</span>
               <span>Imprimir</span>
             </button>
             <button type="button" className="secondary icon-button" onClick={onClear} title="Limpiar captura">
-              <RotateCcw size={18} />
+              <span aria-hidden="true">[L]</span>
               <span>Limpiar</span>
             </button>
             <button type="button" className="primary icon-button" onClick={onSubmit} disabled={isSubmitting}>
-              <Send size={18} />
+              <span aria-hidden="true">{"[>]"}</span>
               <span>{isSubmitting ? "Enviando" : "Enviar"}</span>
             </button>
           </>

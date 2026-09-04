@@ -1,6 +1,4 @@
 import React from "react";
-import Plus from "lucide-react/dist/esm/icons/plus.js";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2.js";
 import { createId } from "../utils/id";
 
 function newMovement(catalogos) {
@@ -34,7 +32,7 @@ export default function MovementsTable({ catalogos, movimientos, onChange }) {
           <h2>Movimientos</h2>
         </div>
         <button type="button" className="secondary icon-button" onClick={addMovement}>
-          <Plus size={18} />
+          <span aria-hidden="true">+</span>
           <span>Agregar fila</span>
         </button>
       </div>
@@ -45,11 +43,11 @@ export default function MovementsTable({ catalogos, movimientos, onChange }) {
             <tr>
               <th>Oficina</th>
               <th>Tipo</th>
-              <th>Metodo</th>
+              <th>Método</th>
               <th>Folio</th>
               <th>Cliente</th>
-              <th>Division</th>
-              <th>Autorizo</th>
+              <th>División</th>
+              <th>Autorizó</th>
               <th>Importe</th>
               <th>Comentarios</th>
               <th aria-label="Eliminar" />
@@ -101,10 +99,24 @@ export default function MovementsTable({ catalogos, movimientos, onChange }) {
                   />
                 </td>
                 <td>
-                  <input value={mov.division} onChange={(event) => updateMovement(mov.id, "division", event.target.value)} />
+                  <select value={mov.division} onChange={(event) => updateMovement(mov.id, "division", event.target.value)}>
+                    <option value="">Selecciona</option>
+                    {catalogos.divisiones.map((division) => (
+                      <option key={division} value={division}>
+                        {division}
+                      </option>
+                    ))}
+                  </select>
                 </td>
                 <td>
-                  <input value={mov.autorizo} onChange={(event) => updateMovement(mov.id, "autorizo", event.target.value)} />
+                  <select value={mov.autorizo} onChange={(event) => updateMovement(mov.id, "autorizo", event.target.value)}>
+                    <option value="">Selecciona</option>
+                    {catalogos.autorizo.map((autorizo) => (
+                      <option key={autorizo} value={autorizo}>
+                        {autorizo}
+                      </option>
+                    ))}
+                  </select>
                 </td>
                 <td>
                   <input
@@ -123,7 +135,7 @@ export default function MovementsTable({ catalogos, movimientos, onChange }) {
                 </td>
                 <td>
                   <button type="button" className="ghost square-button" onClick={() => removeMovement(mov.id)} title="Eliminar fila">
-                    <Trash2 size={17} />
+                    <span aria-hidden="true">x</span>
                   </button>
                 </td>
               </tr>

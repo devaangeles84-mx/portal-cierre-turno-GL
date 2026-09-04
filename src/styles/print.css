@@ -8,9 +8,27 @@
   }
 
   .app-header,
-  .app-shell,
   .toast,
   .modal-backdrop {
+    display: none !important;
+  }
+
+  .app-shell {
+    display: block !important;
+    width: 100%;
+    padding: 0;
+  }
+
+  .content-column > * {
+    display: none !important;
+  }
+
+  .content-column > .admin-dashboard,
+  .admin-dashboard > .admin-print-view {
+    display: block !important;
+  }
+
+  .admin-dashboard > *:not(.admin-print-view) {
     display: none !important;
   }
 

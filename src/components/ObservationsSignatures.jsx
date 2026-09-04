@@ -26,12 +26,16 @@ export default function ObservationsSignatures({ form, onChange }) {
           <input value={form.entregaNombre} onChange={(event) => onChange("entregaNombre", event.target.value)} />
         </label>
         <label>
-          Recibe
-          <input value={form.recibeNombre} onChange={(event) => onChange("recibeNombre", event.target.value)} />
-        </label>
-        <label>
           Traslada
           <input value={form.trasladaNombre} onChange={(event) => onChange("trasladaNombre", event.target.value)} />
+        </label>
+        <label>
+          Ruta
+          <input
+          value={form.rutaValija || ""}
+            onChange={(event) => onChange("rutaValija", event.target.value)}
+            placeholder="Ej. La Union -> Administracion"
+          />
         </label>
       </div>
     </section>

@@ -6,6 +6,7 @@ export function validateCierre({ form, oficinas, movimientos, summaries }) {
 
   if (!form.fechaCierre) errors.push("La fecha de cierre es obligatoria.");
   if (!form.usuarioCaptura?.trim()) errors.push("El usuario que captura es obligatorio.");
+  if (!oficinas[0]) errors.push("La oficina del cierre es obligatoria.");
 
   const hasOfficeData = oficinas.some((oficina) => {
     const summary = summaries.find((item) => item.oficina === oficina);
@@ -17,11 +18,13 @@ export function validateCierre({ form, oficinas, movimientos, summaries }) {
         "egresos",
         "ingresos",
         "liberaciones",
-        "kashpay",
+        "clip",
         "terminalBBVA",
         "transferencia",
         "pensiones",
-        "pendientes"
+        "pendientes",
+        "sobrantes",
+        "faltantes"
       ].some((key) => toNumber(summary[key]) !== 0)
     );
   });
@@ -35,6 +38,12 @@ export function validateCierre({ form, oficinas, movimientos, summaries }) {
     }
     if (amount < 0 && mov.tipoMovimiento !== "Egreso") {
       errors.push(`La fila ${index + 1} tiene importe negativo y no es egreso.`);
+    }
+    if (amount > 0 && !mov.division) {
+      errors.push(`Selecciona division en la fila ${index + 1}.`);
+    }
+    if (amount > 0 && !mov.autorizo) {
+      errors.push(`Selecciona quien autorizo en la fila ${index + 1}.`);
     }
   });
 

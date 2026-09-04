@@ -1,5 +1,4 @@
 import React from "react";
-import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle.js";
 import { formatMoney } from "../utils/money";
 
 const metrics = [
@@ -9,13 +8,13 @@ const metrics = [
   ["pendientes", "O.S. pendientes"],
   ["ingresos", "Ingresos / O.S."],
   ["liberaciones", "Liberaciones"],
-  ["kashpay", "Kashpay"],
+  ["pensiones", "Pensiones"],
+  ["sobrantes", "Sobrantes"],
+  ["faltantes", "Faltantes"],
+  ["clip", "CLIP"],
   ["terminalBBVA", "Terminal BBVA"],
   ["transferencia", "Transferencia"],
-  ["pensiones", "Pensiones"],
   ["efectivoContado", "Efectivo contado"],
-  ["importeSinPensiones", "Sin pensiones"],
-  ["importeConPensiones", "Con pensiones"],
   ["totalOficina", "Total neto oficina"]
 ];
 
@@ -31,7 +30,7 @@ export default function OfficeCard({ summary }) {
         </div>
         {hasDifference && (
           <span className="difference-badge" title="Diferencia detectada">
-            <AlertTriangle size={16} />
+            <span aria-hidden="true">!</span>
             {formatMoney(summary.diferencia)}
           </span>
         )}

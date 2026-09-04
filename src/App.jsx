@@ -28,10 +28,12 @@ const initialForm = {
   fechaCierre: new Date().toISOString().slice(0, 10),
   turno: "General",
   usuarioCaptura: "",
+  oficina: "",
   observaciones: "",
   entregaNombre: "",
   recibeNombre: "",
-  trasladaNombre: ""
+  trasladaNombre: "",
+  rutaValija: ""
 };
 
 function loadDraft() {
@@ -57,14 +59,14 @@ export default function App() {
   const [form, setForm] = useState(draft?.form || initialForm);
   const [movimientos, setMovimientos] = useState(draft?.movimientos || []);
   const [conteos, setConteos] = useState(
-    draft?.conteos || createInitialCashCounts(DEFAULT_CATALOGOS.oficinas, DEFAULT_CATALOGOS.denominaciones)
+    migrateCashCounts(draft?.conteos) || createInitialCashCounts(DEFAULT_CATALOGOS.oficinas, DEFAULT_CATALOGOS.denominaciones)
   );
   const [valesAseguradora, setValesAseguradora] = useState(draft?.valesAseguradora || []);
   const [toast, setToast] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [confirm, setConfirm] = useState({ open: false, warnings: [] });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLocked, setIsLocked] = useState(draft?.estatus === "Enviado");
+  const [isLocked, setIsLocked] = useState(["Enviado", "Validado"].includes(draft?.estatus));
 
   useEffect(() => {
     getCatalogos().then((data) => {
@@ -78,29 +80,39 @@ export default function App() {
       setConteos((current) => ensureCashCounts(current, normalized.oficinas, normalized.denominaciones));
       setForm((current) => ({
         ...current,
-        turno: normalized.turnos.includes(current.turno) ? current.turno : normalized.turnos[0]
+        turno: normalized.turnos.includes(current.turno) ? current.turno : normalized.turnos[0],
+        oficina: current.oficina || session?.oficina || normalized.oficinas[0] || ""
       }));
     });
-  }, []);
+  }, [session?.oficina]);
 
-  const scopedCatalogos =
-    session?.rol === "OFICINA" && session.oficina
-      ? { ...catalogos, oficinas: [session.oficina] }
-      : catalogos;
+  const selectedOffice = form.oficina || session?.oficina || catalogos.oficinas[0] || "";
+  const captureCatalogos = { ...catalogos, oficinas: catalogos.oficinas };
 
   const summaries = useMemo(
     () =>
       calculateOfficeSummaries({
-        oficinas: scopedCatalogos.oficinas,
-        movimientos,
-        conteos
+        oficinas: selectedOffice ? [selectedOffice] : [],
+        movimientos: movimientos.map((mov) => ({ ...mov, oficina: selectedOffice })),
+        conteos: conteos.filter((row) => row.oficina === selectedOffice)
       }),
-    [scopedCatalogos.oficinas, movimientos, conteos]
+    [selectedOffice, movimientos, conteos]
   );
 
   const totals = useMemo(() => calculateTotals(summaries), [summaries]);
 
   const updateForm = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+
+  const updateCaptureField = (field, value) => {
+    if (field !== "oficina") {
+      updateForm(field, value);
+      return;
+    }
+    setForm((current) => ({ ...current, oficina: value }));
+    setMovimientos((current) => current.map((mov) => ({ ...mov, oficina: value })));
+    setValesAseguradora((current) => current.map((vale) => ({ ...vale, oficina: value })));
+    setConteos((current) => ensureCashCounts(current, [value], catalogos.denominaciones));
+  };
 
   const saveDraft = async () => {
     const payload = buildPayload("Borrador");
@@ -123,15 +135,18 @@ export default function App() {
   const buildPayload = (estatus = "Enviado") => ({
     sessionToken: session?.sessionToken,
     action: estatus === "Borrador" ? "saveDraft" : "submit",
-    cierre: {
-      ...form,
-      usuarioCaptura: session?.usuario || form.usuarioCaptura,
-      oficina: scopedCatalogos.oficinas[0],
+      cierre: {
+        ...form,
+        usuarioCaptura: session?.usuario || form.usuarioCaptura,
+      usuarioNombre: session?.nombre || session?.usuario || form.usuarioCaptura,
+      oficina: selectedOffice,
+      oficinaSeleccionada: selectedOffice,
       estatus,
+      ...(summaries[0] || {}),
       ...totals
     },
-    movimientos,
-    conteos: conteos.filter((row) => Number(row.cantidad) > 0),
+    movimientos: movimientos.map((mov) => ({ ...mov, oficina: selectedOffice })),
+    conteos: conteos.filter((row) => row.oficina === selectedOffice && Number(row.cantidad) > 0),
     valesAseguradora: valesAseguradora.filter((vale) =>
       [
         vale.ordenGrips,
@@ -145,7 +160,8 @@ export default function App() {
         vale.comentarios
       ].some((value) => String(value || "").trim() !== "")
     ),
-    resumenOficinas: summaries
+    resumenOficinas: summaries,
+    auditAction: estatus === "Borrador" ? "GUARDAR_BORRADOR" : "ENVIAR_CIERRE"
   });
 
   const requestSubmit = () => {
@@ -154,8 +170,8 @@ export default function App() {
         ...form,
         usuarioCaptura: session?.nombre || session?.usuario || form.usuarioCaptura
       },
-      oficinas: scopedCatalogos.oficinas,
-      movimientos,
+      oficinas: selectedOffice ? [selectedOffice] : [],
+      movimientos: movimientos.map((mov) => ({ ...mov, oficina: selectedOffice })),
       summaries
     });
     if (validation.errors.length > 0) {
@@ -163,12 +179,16 @@ export default function App() {
       return;
     }
 
-    if (validation.hasDifferences) {
-      setConfirm({ open: true, warnings: validation.warnings });
-      return;
-    }
-
-    sendCierre();
+    setConfirm({
+      open: true,
+      warnings: validation.warnings.length ? validation.warnings : ["¿Está seguro de que desea realizar el cierre de esta oficina?"],
+      details: [
+        ["Fecha", form.fechaCierre],
+        ["Turno", form.turno],
+        ["Oficina", selectedOffice],
+        ["Usuario", session?.usuario || form.usuarioCaptura]
+      ]
+    });
   };
 
   const sendCierre = async () => {
@@ -194,15 +214,12 @@ export default function App() {
     setForm((current) => ({
       ...current,
       usuarioCaptura: nextSession.nombre || nextSession.usuario || "",
-      oficina: nextSession.oficina || ""
+      oficina: nextSession.oficina || current.oficina || catalogos.oficinas[0] || ""
     }));
-    if (nextSession.rol === "OFICINA" && nextSession.oficina) {
-      setConteos((current) => ensureCashCounts(current, [nextSession.oficina], catalogos.denominaciones));
-      setMovimientos((current) =>
-        current.map((mov) => ({ ...mov, oficina: nextSession.oficina })).filter((mov) => mov.oficina === nextSession.oficina)
-      );
-      setValesAseguradora((current) => current.map((vale) => ({ ...vale, oficina: nextSession.oficina })));
-    }
+    const office = nextSession.oficina || catalogos.oficinas[0] || "";
+    if (office) setConteos((current) => ensureCashCounts(current, [office], catalogos.denominaciones));
+    setMovimientos((current) => current.map((mov) => ({ ...mov, oficina: office })));
+    setValesAseguradora((current) => current.map((vale) => ({ ...vale, oficina: office })));
   };
 
   const clearCapture = () => {
@@ -210,11 +227,11 @@ export default function App() {
     setForm({
       ...initialForm,
       usuarioCaptura: session?.nombre || session?.usuario || "",
-      oficina: session?.oficina || ""
+      oficina: selectedOffice || session?.oficina || catalogos.oficinas[0] || ""
     });
     setMovimientos([]);
     setValesAseguradora([]);
-    setConteos(createInitialCashCounts(scopedCatalogos.oficinas, scopedCatalogos.denominaciones));
+    setConteos(createInitialCashCounts([selectedOffice || session?.oficina || catalogos.oficinas[0] || ""], catalogos.denominaciones));
     setIsLocked(false);
     setStatusMessage("Captura limpia. Puedes iniciar un cierre nuevo.");
     setToast({ type: "ok", message: "Captura limpia." });
@@ -234,9 +251,9 @@ export default function App() {
     <>
       <Header
         form={form}
-        catalogos={scopedCatalogos}
+        catalogos={captureCatalogos}
         session={session}
-        onChange={updateForm}
+        onChange={updateCaptureField}
         onSaveDraft={saveDraft}
         onSubmit={requestSubmit}
         onPrint={() => window.print()}
@@ -257,7 +274,7 @@ export default function App() {
 
           {statusMessage && <div className="inline-alert ok">{statusMessage}</div>}
 
-          {session.rol === "ADMIN" ? (
+          {session.rol === "ADMIN" || session.rol === "CONTABILIDAD" ? (
             <AdminDashboard session={session} catalogos={catalogos} />
           ) : (
             <>
@@ -277,15 +294,15 @@ export default function App() {
                   ))}
                 </section>
 
-                <MovementsTable catalogos={scopedCatalogos} movimientos={movimientos} onChange={setMovimientos} />
+                <MovementsTable catalogos={{ ...captureCatalogos, oficinas: [selectedOffice] }} movimientos={movimientos} onChange={setMovimientos} />
                 <CashCountTable
                   conteos={conteos}
-                  oficinas={scopedCatalogos.oficinas}
-                  denominaciones={scopedCatalogos.denominaciones}
+                  oficinas={[selectedOffice]}
+                  denominaciones={catalogos.denominaciones}
                   onChange={setConteos}
                 />
                 <InsuranceVouchersTable
-                  oficina={scopedCatalogos.oficinas[0]}
+                  oficina={selectedOffice}
                   vales={valesAseguradora}
                   onChange={setValesAseguradora}
                 />
@@ -307,6 +324,7 @@ export default function App() {
       <ConfirmModal
         open={confirm.open}
         warnings={confirm.warnings}
+        details={confirm.details}
         onCancel={() => setConfirm({ open: false, warnings: [] })}
         onConfirm={sendCierre}
       />
@@ -327,24 +345,41 @@ function normalizeDenominations(denominaciones) {
 
 function ensureCashCounts(current, oficinas, denominaciones) {
   const next = [...current];
-  const exists = new Set(current.map((row) => `${row.oficina}|${row.concepto}|${row.denominacion}`));
+  const exists = new Set(current.map((row) => `${row.oficina}|${row.denominacion}`));
 
   oficinas.forEach((oficina) => {
-    ["Liberaciones", "Pensiones"].forEach((concepto) => {
-      denominaciones.forEach((denominacion) => {
-        const key = `${oficina}|${concepto}|${denominacion}`;
-        if (!exists.has(key)) {
-          next.push({
-            id: createId("conteo"),
-            oficina,
-            concepto,
-            denominacion,
-            cantidad: ""
-          });
-        }
-      });
+    denominaciones.forEach((denominacion) => {
+      const key = `${oficina}|${denominacion}`;
+      if (!exists.has(key)) {
+        next.push({
+          id: createId("conteo"),
+          oficina,
+          concepto: "Consolidado",
+          denominacion,
+          cantidad: ""
+        });
+      }
     });
   });
 
   return next.filter((row) => oficinas.includes(row.oficina) && denominaciones.includes(Number(row.denominacion)));
+}
+
+function migrateCashCounts(conteos) {
+  if (!Array.isArray(conteos)) return null;
+  const byOfficeAndDenomination = new Map();
+  conteos.forEach((row) => {
+    const key = `${row.oficina}|${Number(row.denominacion)}`;
+    const existing = byOfficeAndDenomination.get(key);
+    if (existing) {
+      existing.cantidad = String((Number(existing.cantidad) || 0) + (Number(row.cantidad) || 0));
+    } else {
+      byOfficeAndDenomination.set(key, {
+        ...row,
+        concepto: "Consolidado",
+        denominacion: Number(row.denominacion)
+      });
+    }
+  });
+  return Array.from(byOfficeAndDenomination.values());
 }
