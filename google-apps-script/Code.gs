@@ -570,7 +570,7 @@ function validateCierreContabilidad(payload) {
     if (values[i][idIndex] !== cierreId) continue;
     if (normalizeStatus(values[i][statusIndex]) === "VALIDADO") throw new Error("Este cierre ya fue validado.");
     if (normalizeStatus(values[i][statusIndex]) !== "ENVIADO") throw new Error("Solo se pueden validar cierres enviados.");
-    if (number(values[i][diffIndex]) !== 0 && !String(payload.observacionValidacion || "").trim()) {
+    if (hasMeaningfulDifference(values[i][diffIndex]) && !String(payload.observacionValidacion || "").trim()) {
       throw new Error("La observacion de validacion es obligatoria cuando existe diferencia.");
     }
     const now = new Date();
@@ -789,6 +789,10 @@ function jsonResponse(data) {
 function number(value) {
   const parsed = Number(value);
   return isFinite(parsed) ? parsed : 0;
+}
+
+function hasMeaningfulDifference(value) {
+  return Math.abs(number(value)) >= 0.01;
 }
 
 function isActive(value) {

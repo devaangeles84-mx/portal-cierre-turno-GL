@@ -65,6 +65,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [confirm, setConfirm] = useState({ open: false, warnings: [] });
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocked, setIsLocked] = useState(["Enviado", "Validado"].includes(draft?.estatus));
 
@@ -115,6 +116,7 @@ export default function App() {
   };
 
   const saveDraft = async () => {
+    setIsSavingDraft(true);
     const payload = buildPayload("Borrador");
     localStorage.setItem(
       DRAFT_KEY,
@@ -132,6 +134,8 @@ export default function App() {
         : `No se pudo guardar en Sheets: ${error.message}`;
       setStatusMessage(message);
       setToast({ type: isLocal ? "ok" : "error", message });
+    } finally {
+      setIsSavingDraft(false);
     }
   };
 
@@ -262,6 +266,7 @@ export default function App() {
         onPrint={() => window.print()}
         onClear={clearCapture}
         onLogout={handleLogout}
+        isSavingDraft={isSavingDraft}
         isSubmitting={isSubmitting}
       />
 
@@ -328,9 +333,19 @@ export default function App() {
         open={confirm.open}
         warnings={confirm.warnings}
         details={confirm.details}
+        loading={isSubmitting}
         onCancel={() => setConfirm({ open: false, warnings: [] })}
         onConfirm={sendCierre}
       />
+      {(isSavingDraft || isSubmitting) && (
+        <div className="loading-overlay" role="status" aria-live="polite">
+          <div className="loading-card">
+            <span className="loading-spinner" aria-hidden="true" />
+            <strong>{isSubmitting ? "Enviando cierre" : "Guardando borrador"}</strong>
+            <p>Espera un momento, estamos confirmando la operacion.</p>
+          </div>
+        </div>
+      )}
       <Toast toast={toast} onClose={() => setToast(null)} />
     </>
   );

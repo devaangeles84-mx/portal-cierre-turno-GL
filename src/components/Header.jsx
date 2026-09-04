@@ -10,6 +10,7 @@ export default function Header({
   onPrint,
   onClear,
   onLogout,
+  isSavingDraft,
   isSubmitting
 }) {
   const isBackOffice = session?.rol === "ADMIN" || session?.rol === "CONTABILIDAD";
@@ -74,8 +75,8 @@ export default function Header({
       <div className="header-actions">
         {!isBackOffice && (
           <>
-            <button type="button" className="secondary icon-button" onClick={onSaveDraft} title="Guardar borrador">
-              <span>Guardar</span>
+            <button type="button" className="secondary icon-button" onClick={onSaveDraft} title="Guardar borrador" disabled={isSavingDraft || isSubmitting}>
+              <span>{isSavingDraft ? "Guardando" : "Guardar"}</span>
             </button>
             <button type="button" className="secondary icon-button" onClick={onPrint} title="Vista de impresion">
               <span>Imprimir</span>

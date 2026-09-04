@@ -23,6 +23,7 @@ export default function AdminDashboard({ session, catalogos }) {
   const [printMode, setPrintMode] = useState("summary");
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [detailLoadingId, setDetailLoadingId] = useState("");
   const [pendingAction, setPendingAction] = useState(null);
 
   const totals = useMemo(() => {
@@ -101,18 +102,22 @@ export default function AdminDashboard({ session, catalogos }) {
 
   const viewDetail = async (cierreId) => {
     try {
+      setDetailLoadingId(cierreId);
+      setMessage("");
       const result = await getCierreDetalle({ sessionToken: session.sessionToken, cierreId });
       setSelected(result.cierre);
       setValidationNote(result.cierre?.cierre?.observacionValidacion || "");
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setDetailLoadingId("");
     }
   };
 
   const validateSelected = async () => {
     const cierre = selected?.cierre;
     if (!cierre) return;
-    if (toNumber(cierre.diferenciaGeneral || cierre.diferencia) !== 0 && !validationNote.trim()) {
+    if (hasMeaningfulDifference(cierre.diferenciaGeneral || cierre.diferencia) && !validationNote.trim()) {
       setMessage("Captura una observacion de validacion para aceptar un cierre con diferencia.");
       return;
     }
@@ -144,6 +149,7 @@ export default function AdminDashboard({ session, catalogos }) {
       await load();
       await viewDetail(cierre.cierreId);
     } catch (error) {
+      setPendingAction(null);
       setMessage(error.message);
     } finally {
       setActionLoading(false);
@@ -173,6 +179,7 @@ export default function AdminDashboard({ session, catalogos }) {
       setPendingAction(null);
       await load();
     } catch (error) {
+      setPendingAction(null);
       setMessage(error.message);
     } finally {
       setActionLoading(false);
@@ -205,6 +212,7 @@ export default function AdminDashboard({ session, catalogos }) {
       await load();
       await viewDetail(cierre.cierreId);
     } catch (error) {
+      setPendingAction(null);
       setMessage(error.message);
     } finally {
       setActionLoading(false);
@@ -380,8 +388,9 @@ export default function AdminDashboard({ session, catalogos }) {
                       type="button"
                       className="secondary icon-button"
                       onClick={() => viewDetail(cierre.cierreId || cierre.idCierre)}
+                      disabled={Boolean(detailLoadingId) || actionLoading}
                     >
-                      <span>Ver</span>
+                      <span>{detailLoadingId === (cierre.cierreId || cierre.idCierre) ? "Consultando" : "Ver"}</span>
                     </button>
                     {session.rol === "ADMIN" && normalizeStatus(cierre.estatus) === "BORRADOR" && (
                       <button
@@ -426,6 +435,15 @@ export default function AdminDashboard({ session, catalogos }) {
         onCancel={() => setPendingAction(null)}
         onConfirm={confirmPendingAction}
       />
+      {(loading || actionLoading || detailLoadingId) && (
+        <div className="loading-overlay" role="status" aria-live="polite">
+          <div className="loading-card">
+            <span className="loading-spinner" aria-hidden="true" />
+            <strong>{getLoadingMessage({ loading, actionLoading, detailLoadingId, pendingAction })}</strong>
+            <p>Espera un momento, estamos actualizando la informacion.</p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -439,6 +457,11 @@ function CierreDetail({ selected, session, validationNote, onValidationNote, onP
   const canValidate = session.rol === "CONTABILIDAD" && normalizeStatus(cierre.estatus) === "ENVIADO";
   const canReopen = session.rol === "ADMIN" && normalizeStatus(cierre.estatus) === "ENVIADO";
   const difference = toNumber(cierre.diferenciaGeneral || cierre.diferencia);
+  const validationRows = {
+    "Validado por": cierre.validadoPorNombre || cierre.validadoPorUsuarioId,
+    "Fecha de validacion": formatDateTime(cierre.validadoTimestamp),
+    "Observacion de validacion": cierre.observacionValidacion || "Sin observacion de validacion"
+  };
 
   return (
     <div className="admin-card detail-panel">
@@ -552,9 +575,13 @@ function CierreDetail({ selected, session, validationNote, onValidationNote, onP
 
       <DetailGrid title="Observaciones" rows={{ Observaciones: cierre.observaciones || "Sin observaciones" }} />
 
+      {normalizeStatus(cierre.estatus) === "VALIDADO" && (
+        <DetailGrid title="Validacion de Contabilidad" rows={validationRows} />
+      )}
+
       {canValidate && (
         <label className="full-field validation-note">
-          Observacion de validacion {difference !== 0 ? "(obligatoria por diferencia)" : "(opcional)"}
+          Observacion de validacion {hasMeaningfulDifference(difference) ? "(obligatoria por diferencia)" : "(opcional)"}
           <textarea rows="3" value={validationNote} onChange={(event) => onValidationNote(event.target.value)} />
         </label>
       )}
@@ -808,6 +835,19 @@ function formatDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
+}
+
+function hasMeaningfulDifference(value) {
+  return Math.abs(toNumber(value)) >= 0.01;
+}
+
+function getLoadingMessage({ loading, actionLoading, detailLoadingId, pendingAction }) {
+  if (detailLoadingId) return "Consultando cierre";
+  if (actionLoading && pendingAction?.type === "validate") return "Validando cierre";
+  if (actionLoading && pendingAction?.type === "delete") return "Eliminando borrador";
+  if (actionLoading && pendingAction?.type === "reopen") return "Reabriendo cierre";
+  if (loading) return "Cargando cierres";
+  return "Procesando";
 }
 
 function getDateRange(range) {
