@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { deleteBorrador, getCierreDetalle, listCierres, reopenCierre, validateCierreContabilidad } from "../services/api";
 import ConfirmModal from "./ConfirmModal";
 import PrintHeader from "./PrintHeader";
-import PrintNameModal from "./PrintNameModal";
 import PrintSignatures from "./PrintSignatures";
 import { formatMoney, toNumber } from "../utils/money";
 
@@ -24,8 +23,6 @@ export default function AdminDashboard({ session, catalogos }) {
   const [message, setMessage] = useState("");
   const [validationNote, setValidationNote] = useState("");
   const [printMode, setPrintMode] = useState("summary");
-  const [printName, setPrintName] = useState(null);
-  const [printDeliveryName, setPrintDeliveryName] = useState("");
   const [printRequested, setPrintRequested] = useState(false);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -112,7 +109,6 @@ export default function AdminDashboard({ session, catalogos }) {
       setMessage("");
       const result = await getCierreDetalle({ sessionToken: session.sessionToken, cierreId });
       setSelected(result.cierre);
-      setPrintDeliveryName(result.cierre?.cierre?.entregaNombre || "");
       setValidationNote(result.cierre?.cierre?.observacionValidacion || "");
     } catch (error) {
       setMessage(error.message);
@@ -239,13 +235,8 @@ export default function AdminDashboard({ session, catalogos }) {
   };
 
   const printSelected = () => {
-    setPrintName(selected?.cierre?.entregaNombre || "");
-  };
-
-  const confirmPrint = (nombre) => {
+    if (!selected?.cierre) return;
     setPrintMode("detail");
-    setPrintDeliveryName(nombre);
-    setPrintName(null);
     setPrintRequested(true);
   };
 
@@ -442,10 +433,7 @@ export default function AdminDashboard({ session, catalogos }) {
         />
       )}
 
-      <AdminPrintView mode={printMode} cierres={cierres} selected={selected} filters={filters} totals={totals} entregaNombre={printDeliveryName} />
-      {printName !== null && (
-        <PrintNameModal nombre={printName} onChange={setPrintName} onCancel={() => setPrintName(null)} onConfirm={confirmPrint} />
-      )}
+      <AdminPrintView mode={printMode} cierres={cierres} selected={selected} filters={filters} totals={totals} />
       <ConfirmModal
         open={Boolean(pendingAction)}
         title={pendingAction?.title}
@@ -670,7 +658,7 @@ function DetailTable({ title, headers, rows }) {
   );
 }
 
-function AdminPrintView({ mode, cierres, selected, filters, totals, entregaNombre }) {
+function AdminPrintView({ mode, cierres, selected, filters, totals }) {
   const cierre = selected?.cierre || {};
   const detailRows = selected?.movimientos || [];
   const countRows = selected?.conteos || [];
@@ -716,7 +704,7 @@ function AdminPrintView({ mode, cierres, selected, filters, totals, entregaNombr
           <p>Observaciones: {cierre.observaciones || "Sin observaciones"}</p>
           <PrintSignatures
             elaboradoPor={cierre.usuarioNombre || cierre.usuarioCaptura}
-            entregaNombre={entregaNombre || cierre.entregaNombre}
+            entregaNombre={cierre.entregaNombre}
             trasladaNombre={cierre.trasladaNombre}
             rutaValija={cierre.rutaValija}
           />
