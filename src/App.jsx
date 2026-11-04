@@ -9,6 +9,7 @@ import MovementsTable from "./components/MovementsTable";
 import ObservationsSignatures from "./components/ObservationsSignatures";
 import OfficeCard from "./components/OfficeCard";
 import PrintView from "./components/PrintView";
+import PrintNameModal from "./components/PrintNameModal";
 import SummaryPanel from "./components/SummaryPanel";
 import Toast from "./components/Toast";
 import { getCatalogos, submitCierre } from "./services/api";
@@ -67,6 +68,8 @@ export default function App() {
   const [confirm, setConfirm] = useState({ open: false, warnings: [] });
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [printName, setPrintName] = useState(null);
+  const [printRequested, setPrintRequested] = useState(false);
   const [isLocked, setIsLocked] = useState(["Enviado", "Validado"].includes(draft?.estatus));
 
   useEffect(() => {
@@ -103,6 +106,24 @@ export default function App() {
   const totals = useMemo(() => calculateTotals(summaries), [summaries]);
 
   const updateForm = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+
+  useEffect(() => {
+    if (!printRequested) return;
+    setPrintRequested(false);
+    window.print();
+  }, [printRequested]);
+
+  const confirmPrint = (nombre) => {
+    const nextForm = { ...form, entregaNombre: nombre };
+    setForm(nextForm);
+    if (!isLocked) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        form: nextForm, movimientos, conteos, valesAseguradora, estatus: "Borrador"
+      }));
+    }
+    setPrintName(null);
+    setPrintRequested(true);
+  };
 
   const updateCaptureField = (field, value) => {
     if (field !== "oficina") {
@@ -263,7 +284,7 @@ export default function App() {
         onChange={updateCaptureField}
         onSaveDraft={saveDraft}
         onSubmit={requestSubmit}
-        onPrint={() => window.print()}
+        onPrint={() => setPrintName(form.entregaNombre || "")}
         onClear={clearCapture}
         onLogout={handleLogout}
         isSavingDraft={isSavingDraft}
@@ -321,14 +342,14 @@ export default function App() {
         </div>
       </main>
 
-      <PrintView
-        form={form}
+      {session.rol === "OFICINA" && <PrintView
+        form={{ ...form, usuarioNombre: session.nombre || session.usuario, usuarioCaptura: session.usuario }}
         movimientos={movimientos}
         conteos={conteos}
         valesAseguradora={valesAseguradora}
         summaries={summaries}
         totals={totals}
-      />
+      />}
       <ConfirmModal
         open={confirm.open}
         warnings={confirm.warnings}
@@ -337,6 +358,9 @@ export default function App() {
         onCancel={() => setConfirm({ open: false, warnings: [] })}
         onConfirm={sendCierre}
       />
+      {printName !== null && (
+        <PrintNameModal nombre={printName} onChange={setPrintName} onCancel={() => setPrintName(null)} onConfirm={confirmPrint} />
+      )}
       {(isSavingDraft || isSubmitting) && (
         <div className="loading-overlay" role="status" aria-live="polite">
           <div className="loading-card">

@@ -1,5 +1,7 @@
 import React from "react";
 import { formatMoney, toNumber } from "../utils/money";
+import PrintHeader from "./PrintHeader";
+import PrintSignatures from "./PrintSignatures";
 
 export default function PrintView({ form, movimientos, conteos, valesAseguradora = [], summaries, totals }) {
   const countedRows = conteos.filter((row) => toNumber(row.cantidad) > 0);
@@ -18,53 +20,35 @@ export default function PrintView({ form, movimientos, conteos, valesAseguradora
 
   return (
     <section className="print-view" aria-label="Vista de impresion">
-      <div className="print-header">
-        <img src="/gl2.png" alt="La Grúa" />
-        <div>
-          <h1>Cierre de Turno</h1>
-          <p>Reporte de cierre por oficina</p>
-        </div>
-      </div>
+      <PrintHeader oficina={form.oficina || summaries[0]?.oficina} fecha={form.fechaCierre} />
       <div className="print-meta">
-        <span>Fecha: {form.fechaCierre}</span>
         <span>Turno: {form.turno}</span>
-        <span>Usuario: {form.usuarioCaptura}</span>
+        <span>Elaboró: {form.usuarioNombre || form.usuarioCaptura}</span>
       </div>
 
       <h2>Resumen por oficina</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Oficina</th>
-            <th>Efectivo esperado</th>
-            <th>Efectivo contado</th>
-            <th>CLIP</th>
-            <th>Pensiones</th>
-            <th>Sobrante</th>
-            <th>Faltante</th>
-            <th>Total neto</th>
-            <th>Diferencia</th>
-          </tr>
-        </thead>
-        <tbody>
-          {summaries.map((summary) => (
-            <tr key={summary.oficina}>
-              <td>{summary.oficina}</td>
-              <td>{formatMoney(summary.efectivoEsperado)}</td>
-              <td>{formatMoney(summary.efectivoContado)}</td>
-              <td>{formatMoney(summary.clip || summary.kashpay)}</td>
-              <td>{formatMoney(summary.pensiones)}</td>
-              <td>{formatMoney(summary.sobrantes)}</td>
-              <td>{formatMoney(summary.faltantes)}</td>
-              <td>{formatMoney(summary.totalOficina)}</td>
-              <td>{formatMoney(summary.diferencia)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {summaries.map((summary) => (
+        <table key={summary.oficina} className="print-summary" aria-label={`Resumen de ${summary.oficina}`}>
+          <tbody>
+            {[
+              ["Efectivo esperado", summary.efectivoEsperado, "Efectivo contado", summary.efectivoContado],
+              ["CLIP", summary.clip || summary.kashpay, "Pensiones", summary.pensiones],
+              ["Sobrante", summary.sobrantes, "Faltante", summary.faltantes],
+              ["Total neto", summary.totalOficina, "Diferencia", summary.diferencia]
+            ].map(([label, value, secondLabel, secondValue]) => (
+              <tr key={label}>
+                <th scope="row">{label}</th>
+                <td>{formatMoney(value)}</td>
+                <th scope="row">{secondLabel}</th>
+                <td>{formatMoney(secondValue)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ))}
 
       <h2>Movimientos</h2>
-      <table>
+      <table className="print-movements">
         <thead>
           <tr>
             <th>Oficina</th>
@@ -81,7 +65,7 @@ export default function PrintView({ form, movimientos, conteos, valesAseguradora
               <td>{mov.oficina}</td>
               <td>{mov.tipoMovimiento}</td>
               <td>{mov.metodoPago}</td>
-              <td>{mov.folioOS}</td>
+              <td className="print-folio">{mov.folioOS}</td>
               <td>{mov.clienteRazonSocial}</td>
               <td>{formatMoney(mov.importe)}</td>
             </tr>
@@ -130,9 +114,9 @@ export default function PrintView({ form, movimientos, conteos, valesAseguradora
             <tbody>
               {voucherRows.map((vale) => (
                 <tr key={vale.id}>
-                  <td>{vale.ordenGrips}</td>
+                  <td className="print-folio">{vale.ordenGrips}</td>
                   <td>{vale.aseguradora}</td>
-                  <td>{vale.folioVale}</td>
+                  <td className="print-folio">{vale.folioVale}</td>
                   <td>{vale.vehiculo}</td>
                   <td>{vale.marca}</td>
                   <td>{vale.modelo}</td>
@@ -147,11 +131,12 @@ export default function PrintView({ form, movimientos, conteos, valesAseguradora
 
       <h2>Total general: {formatMoney(totals.totalGeneral)}</h2>
       <p>Observaciones: {form.observaciones || "Sin observaciones"}</p>
-      <div className="print-signatures">
-        <span>Entrega: {form.entregaNombre}</span>
-        <span>Traslada: {form.trasladaNombre}</span>
-        <span>Ruta: {form.rutaValija || "—"}</span>
-      </div>
+      <PrintSignatures
+        elaboradoPor={form.usuarioNombre || form.usuarioCaptura}
+        entregaNombre={form.entregaNombre}
+        trasladaNombre={form.trasladaNombre}
+        rutaValija={form.rutaValija}
+      />
     </section>
   );
 }

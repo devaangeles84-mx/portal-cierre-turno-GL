@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { deleteBorrador, getCierreDetalle, listCierres, reopenCierre, validateCierreContabilidad } from "../services/api";
 import ConfirmModal from "./ConfirmModal";
+import PrintHeader from "./PrintHeader";
+import PrintNameModal from "./PrintNameModal";
+import PrintSignatures from "./PrintSignatures";
 import { formatMoney, toNumber } from "../utils/money";
 
 const emptyFilters = {
@@ -21,6 +24,9 @@ export default function AdminDashboard({ session, catalogos }) {
   const [message, setMessage] = useState("");
   const [validationNote, setValidationNote] = useState("");
   const [printMode, setPrintMode] = useState("summary");
+  const [printName, setPrintName] = useState(null);
+  const [printDeliveryName, setPrintDeliveryName] = useState("");
+  const [printRequested, setPrintRequested] = useState(false);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [detailLoadingId, setDetailLoadingId] = useState("");
@@ -106,6 +112,7 @@ export default function AdminDashboard({ session, catalogos }) {
       setMessage("");
       const result = await getCierreDetalle({ sessionToken: session.sessionToken, cierreId });
       setSelected(result.cierre);
+      setPrintDeliveryName(result.cierre?.cierre?.entregaNombre || "");
       setValidationNote(result.cierre?.cierre?.observacionValidacion || "");
     } catch (error) {
       setMessage(error.message);
@@ -228,13 +235,25 @@ export default function AdminDashboard({ session, catalogos }) {
 
   const printSummary = () => {
     setPrintMode("summary");
-    setTimeout(() => window.print(), 0);
+    setPrintRequested(true);
   };
 
   const printSelected = () => {
-    setPrintMode("detail");
-    setTimeout(() => window.print(), 0);
+    setPrintName(selected?.cierre?.entregaNombre || "");
   };
+
+  const confirmPrint = (nombre) => {
+    setPrintMode("detail");
+    setPrintDeliveryName(nombre);
+    setPrintName(null);
+    setPrintRequested(true);
+  };
+
+  useEffect(() => {
+    if (!printRequested) return;
+    setPrintRequested(false);
+    window.print();
+  }, [printRequested]);
 
   return (
     <section className="admin-dashboard">
@@ -423,7 +442,10 @@ export default function AdminDashboard({ session, catalogos }) {
         />
       )}
 
-      <AdminPrintView mode={printMode} cierres={cierres} selected={selected} filters={filters} totals={totals} />
+      <AdminPrintView mode={printMode} cierres={cierres} selected={selected} filters={filters} totals={totals} entregaNombre={printDeliveryName} />
+      {printName !== null && (
+        <PrintNameModal nombre={printName} onChange={setPrintName} onCancel={() => setPrintName(null)} onConfirm={confirmPrint} />
+      )}
       <ConfirmModal
         open={Boolean(pendingAction)}
         title={pendingAction?.title}
@@ -648,7 +670,7 @@ function DetailTable({ title, headers, rows }) {
   );
 }
 
-function AdminPrintView({ mode, cierres, selected, filters, totals }) {
+function AdminPrintView({ mode, cierres, selected, filters, totals, entregaNombre }) {
   const cierre = selected?.cierre || {};
   const detailRows = selected?.movimientos || [];
   const countRows = selected?.conteos || [];
@@ -657,12 +679,10 @@ function AdminPrintView({ mode, cierres, selected, filters, totals }) {
     <section className="print-view admin-print-view">
       {mode === "detail" && selected ? (
         <>
-          <PrintHeader title="Cierre de Turno" subtitle="Cierre individual" />
+          <PrintHeader oficina={cierre.oficina} fecha={cierre.fechaCierre} />
           <div className="print-meta">
-            <span>Fecha: {formatDate(cierre.fechaCierre)}</span>
             <span>Turno: {cierre.turno}</span>
-            <span>Oficina: {cierre.oficina}</span>
-            <span>Usuario: {cierre.usuarioNombre || cierre.usuarioCaptura}</span>
+            <span>Elaboró: {cierre.usuarioNombre || cierre.usuarioCaptura}</span>
             <span>Estado: {displayStatus(cierre.estatus)}</span>
             <span>Diferencia: {formatMoney(cierre.diferenciaGeneral || cierre.diferencia)}</span>
           </div>
@@ -691,14 +711,15 @@ function AdminPrintView({ mode, cierres, selected, filters, totals }) {
               ))}
             </tbody>
           </table>
-          <SimplePrintTable title="Movimientos" headers={["Tipo", "Metodo", "Folio", "Cliente", "Importe"]} rows={detailRows.map((row) => [row.tipoMovimiento, displayPayment(row.metodoPago), row.folioOS, row.clienteRazonSocial, formatMoney(row.importe)])} />
+          <SimplePrintTable className="print-movements" title="Movimientos" headers={["Tipo", "Metodo", "Folio", "Cliente", "Importe"]} rows={detailRows.map((row) => [row.tipoMovimiento, displayPayment(row.metodoPago), row.folioOS, row.clienteRazonSocial, formatMoney(row.importe)])} />
           <SimplePrintTable title="Conteo de efectivo" headers={["Denominacion", "Cantidad", "Importe"]} rows={countRows.map((row) => [`$${row.denominacion}`, row.cantidad, formatMoney(row.importe || toNumber(row.cantidad) * row.denominacion)])} />
           <p>Observaciones: {cierre.observaciones || "Sin observaciones"}</p>
-          <div className="print-signatures">
-            <span>Entrega: {cierre.entregaNombre || "—"}</span>
-            <span>Traslada: {cierre.trasladaNombre || "—"}</span>
-            <span>Ruta: {cierre.rutaValija || "—"}</span>
-          </div>
+          <PrintSignatures
+            elaboradoPor={cierre.usuarioNombre || cierre.usuarioCaptura}
+            entregaNombre={entregaNombre || cierre.entregaNombre}
+            trasladaNombre={cierre.trasladaNombre}
+            rutaValija={cierre.rutaValija}
+          />
           {normalizeStatus(cierre.estatus) === "VALIDADO" && (
             <p>
               VALIDADO POR CONTABILIDAD. Validado por: {cierre.validadoPorNombre || "—"}. Fecha de validacion:{" "}
@@ -708,7 +729,7 @@ function AdminPrintView({ mode, cierres, selected, filters, totals }) {
         </>
       ) : (
         <>
-          <PrintHeader title="Resumen de Cierres" subtitle="Consolidado por filtros activos" />
+          <PrintHeader title="Resumen de Cierres" oficina={filters.oficina} fecha={formatFilterDates(filters)} />
           <div className="print-meta">
             <span>Fecha: {formatFilterDates(filters)}</span>
             <span>Turno: {filters.turno || "Todos"}</span>
@@ -758,23 +779,11 @@ function AdminPrintView({ mode, cierres, selected, filters, totals }) {
   );
 }
 
-function PrintHeader({ title, subtitle }) {
-  return (
-    <div className="print-header">
-      <img src="/gl2.png" alt="La Grúa" />
-      <div>
-        <h1>{title}</h1>
-        <p>{subtitle}</p>
-      </div>
-    </div>
-  );
-}
-
-function SimplePrintTable({ title, headers, rows }) {
+function SimplePrintTable({ title, headers, rows, className }) {
   return (
     <>
       <h2>{title}</h2>
-      <table>
+      <table className={className}>
         <thead>
           <tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr>
         </thead>
@@ -782,7 +791,7 @@ function SimplePrintTable({ title, headers, rows }) {
           {rows.map((row, index) => (
             <tr key={index}>
               {row.map((cell, cellIndex) => (
-                <td key={`${index}-${cellIndex}`}>{cell || "—"}</td>
+                <td key={`${index}-${cellIndex}`} className={headers[cellIndex] === "Folio" ? "print-folio" : undefined}>{cell || "—"}</td>
               ))}
             </tr>
           ))}

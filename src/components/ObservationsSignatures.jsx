@@ -22,8 +22,8 @@ export default function ObservationsSignatures({ form, onChange }) {
 
       <div className="signature-grid">
         <label>
-          Entrega
-          <input value={form.entregaNombre} onChange={(event) => onChange("entregaNombre", event.target.value)} />
+          Nombre completo de quien entrega
+          <input value={form.entregaNombre} onChange={(event) => onChange("entregaNombre", event.target.value)} autoComplete="name" />
         </label>
         <label>
           Traslada

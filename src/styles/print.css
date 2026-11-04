@@ -1,6 +1,6 @@
 @media print {
   @page {
-    margin: 12mm;
+    margin: 12mm 12mm 12mm 18mm;
   }
 
   body {
@@ -9,7 +9,8 @@
 
   .app-header,
   .toast,
-  .modal-backdrop {
+  .modal-backdrop,
+  .loading-overlay {
     display: none !important;
   }
 
@@ -40,42 +41,68 @@
   }
 
   .print-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2.3fr);
     align-items: center;
-    gap: 14px;
+    gap: 18px;
     margin-bottom: 12px;
-    border-bottom: 4px solid #f59e0b;
-    background: #101827;
-    color: #fff;
-    padding: 12px;
+    border: 1px solid #aaa;
+    background: #fff;
+    color: #111;
+    padding: 14px;
+    break-inside: avoid;
   }
 
   .print-header img {
-    width: 110px;
+    width: 100px;
+    max-width: 100%;
     height: auto;
   }
 
   .print-header h1 {
-    margin: 0;
-    font-size: 19pt;
+    margin: 8px 0 0;
+    font-size: 14pt;
   }
 
   .print-header p {
     margin: 3px 0 0;
-    color: #d8dee9;
+    color: #444;
+  }
+
+  .print-identity {
+    display: grid;
+    gap: 5px;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  .print-identity > span {
+    color: #444;
+    font-size: 10pt;
+  }
+
+  .print-office {
+    font-size: 23pt;
+    line-height: 1.15;
+  }
+
+  .print-date {
+    font-size: 18pt;
+    line-height: 1.2;
   }
 
   .print-view h2 {
     margin: 18px 0 8px;
     font-size: 13pt;
+    break-after: avoid;
   }
 
-  .print-meta,
-  .print-signatures {
+  .print-meta {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
     margin: 10px 0;
+    overflow-wrap: anywhere;
   }
 
   .print-view table {
@@ -89,9 +116,66 @@
     border: 1px solid #999;
     padding: 5px;
     text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  .print-view thead {
+    display: table-header-group;
+  }
+
+  .print-view tr {
+    break-inside: avoid;
   }
 
   .print-view th {
     background: #eee;
+  }
+
+  .print-movements td {
+    padding: 10px 7px;
+    line-height: 1.45;
+  }
+
+  .print-summary td {
+    white-space: nowrap;
+  }
+
+  .print-view .print-folio {
+    font-size: 13pt;
+    font-weight: 700;
+  }
+
+  .print-signature-section {
+    margin-top: 18px;
+    break-inside: avoid;
+  }
+
+  .print-signatures {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+    gap: 22px;
+    overflow-wrap: anywhere;
+  }
+
+  .print-signatures strong,
+  .print-signatures span {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .print-signature-line {
+    border-top: 1px solid #333;
+    margin-top: 20mm;
+    padding-top: 5px;
+    text-align: center;
+    font-size: 10pt;
+  }
+
+  .print-delivery {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+    overflow-wrap: anywhere;
   }
 }
