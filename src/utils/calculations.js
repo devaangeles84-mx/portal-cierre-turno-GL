@@ -1,5 +1,5 @@
-import { roundMoney, toNumber } from "./money";
-import { createId } from "./id";
+import { roundMoney, toNumber } from "./money.js";
+import { createId } from "./id.js";
 
 export const DEFAULT_DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5];
 
@@ -23,13 +23,34 @@ export const DEFAULT_CATALOGOS = {
   turnos: ["Matutino", "Vespertino", "Nocturno", "General"]
 };
 
-const paymentKey = {
-  Efectivo: "efectivo",
-  CLIP: "clip",
-  Kashpay: "kashpay",
-  "Terminal BBVA": "terminalBBVA",
-  Transferencia: "transferencia"
-};
+const paymentKey = new Map([
+  ["efectivo", "efectivo"],
+  ["clip", "clip"],
+  ["clip debito", "clip"],
+  ["clip credito", "clip"],
+  ["kashpay", "kashpay"],
+  ["bbva", "terminalBBVA"],
+  ["bbva debito", "terminalBBVA"],
+  ["bbva credito", "terminalBBVA"],
+  ["terminal bbva", "terminalBBVA"],
+  ["terminal bbva debito", "terminalBBVA"],
+  ["terminal bbva credito", "terminalBBVA"],
+  ["transferencia", "transferencia"],
+  ["transferencias", "transferencia"],
+  ["transferencia bancaria", "transferencia"],
+  ["transferencia bbva", "transferencia"],
+  ["spei", "transferencia"]
+]);
+
+function getPaymentKey(value) {
+  const label = String(value ?? "")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+  return paymentKey.get(label);
+}
 
 export function createEmptyOfficeResumen(oficina) {
   return {
@@ -70,7 +91,7 @@ export function calculateOfficeSummaries({ oficinas, movimientos, conteos }) {
 
     const amount = toNumber(mov.importe);
     const signedAmount = mov.tipoMovimiento === "Egreso" ? -Math.abs(amount) : amount;
-    const method = paymentKey[mov.metodoPago];
+    const method = getPaymentKey(mov.metodoPago);
     const isAdjustment = ["Sobrante", "Faltante"].includes(mov.tipoMovimiento);
 
     if (mov.tipoMovimiento === "Egreso") summary.egresos += Math.abs(amount);

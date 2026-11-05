@@ -33,6 +33,7 @@ export default function PrintView({ form, movimientos, conteos, valesAseguradora
             {[
               ["Efectivo esperado", summary.efectivoEsperado, "Efectivo contado", summary.efectivoContado],
               ["CLIP", summary.clip || summary.kashpay, "Pensiones", summary.pensiones],
+              ["Terminal BBVA", summary.terminalBBVA, "Transferencia", summary.transferencia],
               ["Sobrante", summary.sobrantes, "Faltante", summary.faltantes],
               ["Total neto", summary.totalOficina, "Diferencia", summary.diferencia]
             ].map(([label, value, secondLabel, secondValue]) => (
