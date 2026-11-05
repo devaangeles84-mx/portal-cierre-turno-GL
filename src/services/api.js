@@ -1,6 +1,18 @@
 import { DEFAULT_CATALOGOS } from "../utils/calculations";
 
 const LOCAL_CIERRES_KEY = "cierre-turno-local-cierres";
+const LOCAL_METODOS_PAGO = [
+  "Efectivo",
+  "Clip Debito",
+  "Clip Credito",
+  "Terminal BBVA Deb",
+  "Terminal BBVA Cred",
+  "Transferencia Banamex",
+  "Transferencia Felipe",
+  "Transferencia Hector S",
+  "Cheque",
+  "No aplica"
+];
 
 async function parseResponse(response) {
   const data = await response.json().catch(() => ({}));
@@ -14,12 +26,18 @@ export async function getCatalogos() {
   try {
     const response = await fetch("/api/get-catalogos");
     const data = await parseResponse(response);
+    if (!Array.isArray(data.catalogos?.metodosPago)) {
+      throw new Error("La respuesta no contiene un catalogo de metodos de pago.");
+    }
     return {
       ...DEFAULT_CATALOGOS,
       ...data.catalogos
     };
   } catch (error) {
     console.warn("Usando catalogos locales:", error.message);
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      return { ...DEFAULT_CATALOGOS, metodosPago: LOCAL_METODOS_PAGO };
+    }
     return DEFAULT_CATALOGOS;
   }
 }

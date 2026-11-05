@@ -21,6 +21,7 @@ export function validateCierre({ form, oficinas, movimientos, summaries }) {
         "clip",
         "terminalBBVA",
         "transferencia",
+        "cheque",
         "pensiones",
         "pendientes",
         "sobrantes",

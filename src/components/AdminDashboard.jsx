@@ -36,6 +36,8 @@ export default function AdminDashboard({ session, catalogos }) {
         acc.totalClip += toNumber(row.totalClip || row.totalKashpay || row.clip || row.kashpay);
         acc.totalTerminal += toNumber(row.totalTerminal || row.terminalBBVA);
         acc.totalTransferencia += toNumber(row.totalTransferencia || row.transferencia);
+        acc.totalCheque += toNumber(row.cheque ?? row.totalCheque);
+        acc.totalGeneral += toNumber(row.totalGeneral ?? row.totalEfectivo);
         acc.totalPensiones += toNumber(row.totalPensiones || row.pensiones);
         acc.totalEgresos += toNumber(row.egresos);
         acc.totalPendientes += toNumber(row.totalPendientes || row.osPendientes);
@@ -52,6 +54,8 @@ export default function AdminDashboard({ session, catalogos }) {
         totalClip: 0,
         totalTerminal: 0,
         totalTransferencia: 0,
+        totalCheque: 0,
+        totalGeneral: 0,
         totalPensiones: 0,
         totalEgresos: 0,
         totalPendientes: 0,
@@ -343,6 +347,8 @@ export default function AdminDashboard({ session, catalogos }) {
           CLIP: totals.totalClip,
           "Terminal BBVA": totals.totalTerminal,
           Transferencia: totals.totalTransferencia,
+          Cheque: totals.totalCheque,
+          "Total neto": totals.totalGeneral,
           Pensiones: totals.totalPensiones,
           Egresos: totals.totalEgresos,
           Pendientes: totals.totalPendientes,
@@ -526,6 +532,8 @@ function CierreDetail({ selected, session, validationNote, onValidationNote, onP
           CLIP: formatMoney(cierre.totalClip || cierre.totalKashpay || cierre.kashpay),
           "Terminal BBVA": formatMoney(cierre.totalTerminal || cierre.terminalBBVA),
           Transferencia: formatMoney(cierre.totalTransferencia || cierre.transferencia),
+          Cheque: formatMoney(cierre.cheque ?? cierre.totalCheque),
+          "Total neto": formatMoney(cierre.totalGeneral ?? cierre.totalEfectivo),
           Pensiones: formatMoney(cierre.totalPensiones || cierre.pensiones),
           Liberaciones: formatMoney(cierre.liberaciones),
           "Ingresos / O.S.": formatMoney(cierre.ingresosOS),
@@ -683,6 +691,8 @@ function AdminPrintView({ mode, cierres, selected, filters, totals }) {
                 ["CLIP", cierre.totalClip || cierre.totalKashpay || cierre.kashpay],
                 ["Terminal BBVA", cierre.totalTerminal || cierre.terminalBBVA],
                 ["Transferencia", cierre.totalTransferencia || cierre.transferencia],
+                ["Cheque", cierre.cheque ?? cierre.totalCheque],
+                ["Total neto", cierre.totalGeneral ?? cierre.totalEfectivo],
                 ["Pensiones", cierre.totalPensiones || cierre.pensiones],
                 ["Liberaciones", cierre.liberaciones],
                 ["Ingresos / O.S.", cierre.ingresosOS],
@@ -732,6 +742,8 @@ function AdminPrintView({ mode, cierres, selected, filters, totals }) {
                 ["CLIP", totals.totalClip],
                 ["Terminal BBVA", totals.totalTerminal],
                 ["Transferencia", totals.totalTransferencia],
+                ["Cheque", totals.totalCheque],
+                ["Total neto", totals.totalGeneral],
                 ["Pensiones", totals.totalPensiones],
                 ["Egresos", totals.totalEgresos],
                 ["Pendientes", totals.totalPendientes],

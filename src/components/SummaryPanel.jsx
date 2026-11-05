@@ -39,6 +39,10 @@ export default function SummaryPanel({ summaries, totals }) {
           <dd>{formatMoney(totals.totalTransferencia)}</dd>
         </div>
         <div>
+          <dt>Cheque</dt>
+          <dd>{formatMoney(totals.totalCheque)}</dd>
+        </div>
+        <div>
           <dt>Pendientes</dt>
           <dd>{formatMoney(totals.totalPendientes)}</dd>
         </div>

@@ -14,6 +14,7 @@ const metrics = [
   ["clip", "CLIP"],
   ["terminalBBVA", "Terminal BBVA"],
   ["transferencia", "Transferencia"],
+  ["cheque", "Cheque"],
   ["efectivoContado", "Efectivo contado"],
   ["totalOficina", "Total neto oficina"]
 ];

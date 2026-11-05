@@ -33,13 +33,19 @@ const paymentKey = new Map([
   ["bbva debito", "terminalBBVA"],
   ["bbva credito", "terminalBBVA"],
   ["terminal bbva", "terminalBBVA"],
+  ["terminal bbva deb", "terminalBBVA"],
+  ["terminal bbva cred", "terminalBBVA"],
   ["terminal bbva debito", "terminalBBVA"],
   ["terminal bbva credito", "terminalBBVA"],
   ["transferencia", "transferencia"],
   ["transferencias", "transferencia"],
   ["transferencia bancaria", "transferencia"],
   ["transferencia bbva", "transferencia"],
-  ["spei", "transferencia"]
+  ["transferencia banamex", "transferencia"],
+  ["transferencia felipe", "transferencia"],
+  ["transferencia hector s", "transferencia"],
+  ["spei", "transferencia"],
+  ["cheque", "cheque"]
 ]);
 
 function getPaymentKey(value) {
@@ -68,6 +74,7 @@ export function createEmptyOfficeResumen(oficina) {
     kashpay: 0,
     terminalBBVA: 0,
     transferencia: 0,
+    cheque: 0,
     pensiones: 0,
     pendientes: 0,
     importeSinPensiones: 0,
@@ -116,7 +123,7 @@ export function calculateOfficeSummaries({ oficinas, movimientos, conteos }) {
     summary.efectivoReportado = summary.efectivoEsperado;
     summary.importeSinPensiones = summary.efectivo - summary.pensiones - summary.egresos;
     summary.importeConPensiones = summary.pensiones > 0 ? summary.efectivo - summary.egresos : 0;
-    summary.totalOficina = summary.efectivoEsperado + summary.clip + summary.terminalBBVA + summary.transferencia;
+    summary.totalOficina = summary.efectivoEsperado + summary.clip + summary.terminalBBVA + summary.transferencia + summary.cheque;
     summary.diferencia = summary.efectivoContado - summary.efectivoEsperado;
 
     Object.keys(summary).forEach((key) => {
@@ -135,6 +142,7 @@ export function calculateTotals(summaries) {
       acc.totalKashpay += summary.clip;
       acc.totalTerminal += summary.terminalBBVA;
       acc.totalTransferencia += summary.transferencia;
+      acc.totalCheque += summary.cheque;
       acc.totalPendientes += summary.pendientes;
       acc.totalPensiones += summary.pensiones;
       acc.totalEgresos += summary.egresos;
@@ -152,6 +160,7 @@ export function calculateTotals(summaries) {
       totalKashpay: 0,
       totalTerminal: 0,
       totalTransferencia: 0,
+      totalCheque: 0,
       totalPendientes: 0,
       totalPensiones: 0,
       totalEgresos: 0,

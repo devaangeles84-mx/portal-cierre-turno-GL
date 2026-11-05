@@ -58,3 +58,22 @@ test("no suma movimientos de control ni metodos desconocidos al cobro", () => {
   assert.equal(totals.totalFaltantes, 15);
   assert.equal(totals.totalPendientes, 30);
 });
+
+test("agrupa todos los nombres del catalogo operativo y mantiene separado el arqueo", () => {
+  const { summary, totals } = summarize([
+    ["Efectivo", 100], ["Clip Debito", 200], ["Clip Credito", 300],
+    ["Terminal BBVA Deb", 400], ["Terminal BBVA Cred", 500],
+    ["Transferencia Banamex", 600], ["Transferencia Felipe", 700], ["Transferencia Hector S", 800],
+    ["Cheque", 900], ["No aplica", 1000, "O.S. pendiente"]
+  ], [[100, 1]]);
+
+  assert.equal(totals.totalClip, 500);
+  assert.equal(totals.totalTerminal, 900);
+  assert.equal(totals.totalTransferencia, 2100);
+  assert.equal(totals.totalCheque, 900);
+  assert.equal(totals.totalGeneral, 4500);
+  assert.equal(totals.totalPendientes, 1000);
+  assert.equal(summary.efectivoEsperado, 100);
+  assert.equal(summary.efectivoContado, 100);
+  assert.equal(totals.diferenciaGeneral, 0);
+});

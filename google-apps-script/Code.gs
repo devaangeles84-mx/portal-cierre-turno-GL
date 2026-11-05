@@ -41,7 +41,8 @@ const HEADERS = {
     "validadoPorUsuarioId",
     "validadoPorNombre",
     "validadoTimestamp",
-    "observacionValidacion"
+    "observacionValidacion",
+    "cheque"
   ],
   CierreMovimientos: [
     "movimientoId",
@@ -90,7 +91,8 @@ const HEADERS = {
     "pendientes",
     "importeSinPensiones",
     "importeConPensiones",
-    "diferencia"
+    "diferencia",
+    "cheque"
   ],
   CierreAuditoria: [
     "auditId",
@@ -213,6 +215,12 @@ function setupSheets() {
 }
 
 function ensureHeaders(sheet, headers) {
+  if (headers[headers.length - 1] === "cheque" && sheet.getLastColumn() >= headers.length) {
+    const current = sheet.getRange(1, headers.length).getValue();
+    if (current !== "cheque") throw new Error("La columna para cheque ya esta ocupada en " + sheet.getName() + ".");
+  }
+  const capacity = sheet.getMaxColumns();
+  if (capacity < headers.length) sheet.insertColumnsAfter(capacity, headers.length - capacity);
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
   sheet.setFrozenRows(1);
 }
@@ -393,7 +401,8 @@ function saveCierre(payload) {
       number(summary.pendientes),
       number(summary.importeSinPensiones),
       number(summary.importeConPensiones),
-      number(summary.diferencia)
+      number(summary.diferencia),
+      number(summary.cheque)
     ];
   }));
 
@@ -461,7 +470,8 @@ function makeCierreRow(args) {
     cierre.validadoPorUsuarioId || "",
     cierre.validadoPorNombre || "",
     cierre.validadoTimestamp || "",
-    cierre.observacionValidacion || ""
+    cierre.observacionValidacion || "",
+    number(summary.cheque ?? cierre.totalCheque)
   ];
 }
 

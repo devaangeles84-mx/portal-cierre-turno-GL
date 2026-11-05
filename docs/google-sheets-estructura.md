@@ -12,6 +12,8 @@ Roles permitidos: `OFICINA`, `ADMIN`, `CONTABILIDAD`.
 
 `kashpay` y `totalKashpay` se conservan solo por compatibilidad; en interfaz se muestran como `CLIP`.
 
+`CierresTurno` y `CierreOficinasResumen` guardan `cheque` al final de sus columnas. Los cierres anteriores no se recalculan.
+
 ## CierreMovimientos
 
 `movimientoId`, `cierreId`, `oficina`, `tipoMovimiento`, `metodoPago`, `folioOS`, `clienteRazonSocial`, `division`, `autorizo`, `importe`, `comentarios`
@@ -48,7 +50,7 @@ Catalogos usados: `Oficinas`, `MetodosPago`, `TiposMovimiento`, `Divisiones`, `A
 
 `efectivoContado = suma de cantidad * denominacion en el arqueo consolidado`
 
-`totalGeneral = efectivoEsperado + CLIP + Terminal BBVA + Transferencia`
+`totalGeneral = efectivoEsperado + CLIP + Terminal BBVA + Transferencia + Cheque`
 
 `diferenciaGeneral = efectivoContado - efectivoEsperado`
 
